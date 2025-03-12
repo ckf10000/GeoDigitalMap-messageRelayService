@@ -1,0 +1,23 @@
+# CLI tool, only in development environment.
+# https://goframe.org/docs/cli
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:admin:admin@tcp(192.168.200.200:5432)/geo_digital_map"
+        descriptionTag: true
+
+  build:
+    name: "GeoDigitalMap-messageRelayService"
+    path: "./bin"
+    arch: "amd64"
+    system: "linux"
+    mod: "none"
+    packSrc: "resource,manifest,logs"
+    version: "v1.0.0"
+    output: "./bin/GeoDigitalMap-messageRelayService"
+    extra: ""
+
+  docker:
+    build: "-a amd64 -s linux -p temp -ew"
+    tagPrefixes:
+      - geo-digital-map/messageRelayService
