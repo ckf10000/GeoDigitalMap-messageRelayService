@@ -15,9 +15,9 @@ import (
 func connDb(ctx context.Context) error {
 	err := g.DB().PingMaster()
 	if err != nil {
-		return errors.New("connection to the database failed")
+		return errors.New("connect to the database failed")
 	}
-	g.Log(consts.RestAPIService).Info(ctx, "database connection successful")
+	g.Log(consts.RestAPIService).Info(ctx, "database connect successful")
 	return nil
 }
 
@@ -29,7 +29,7 @@ func RestAPIServer(ctx context.Context) *ghttp.Server {
 		// 添加了一个全局中间件，处理响应数据
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		// 注册 V1 子路由
-		registerV1Routes(group)
+		registerRestV1Routes(group)
 		// TODO 未来可以添加 V2... 等这样的设计模块子路由
 	})
 	//ser.SetIndexFolder(true)
@@ -49,13 +49,13 @@ func RestAPIServer(ctx context.Context) *ghttp.Server {
 }
 
 // registerV1Routes 将 v1 路由注册逻辑单独封装
-func registerV1Routes(group *ghttp.RouterGroup) {
-	group.Group("/v1", func(group *ghttp.RouterGroup) {
-		//group.Middleware(middleware.Auth)
+func registerRestV1Routes(group *ghttp.RouterGroup) {
+	group.Group("/v1", func(v1 *ghttp.RouterGroup) {
+		//v1.Middleware(middleware.Auth)
 		// TODO 添加自定义的中间件钩子
 
 		// 注册子模块的路由
-		registerMaintenanceRoutes(group)
+		registerMaintenanceRoutes(v1)
 	})
 }
 

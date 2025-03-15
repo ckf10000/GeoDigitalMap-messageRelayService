@@ -102,7 +102,7 @@ func SSLSocketServer(ctx context.Context) *ghttp.Server {
 				break
 			}
 		}
-		g.Log(consts.SSLSocketService).Info(ctx, "websocket connection closed")
+		g.Log(consts.SSLSocketService).Info(ctx, "websocket connect closed")
 	})
 	ser.EnableHTTPS(crtPath, keyPath)
 	ser.SetGraceful(true)
