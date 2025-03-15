@@ -29,5 +29,5 @@ go.work.sum
 # env file
 .env
 .idea
-.crt
-.key
+*.crt
+*.key
