@@ -77,6 +77,7 @@ func SSLSocketServer(ctx context.Context) *ghttp.Server {
 	crtPath, keyPath := GenerateCert(consts.SSLSocketService)
 	ser := g.Server(consts.SSLSocketService)
 	ser.SetLogger(g.Log(consts.SSLSocketService))
+
 	// Bind WebSocket handler to / endpoint
 	ser.BindHandler("/", func(r *ghttp.Request) {
 		ws, err := WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
