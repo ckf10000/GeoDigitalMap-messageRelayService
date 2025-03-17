@@ -36,6 +36,40 @@ func (l *IClientLogic) AddClient(ctx context.Context, clientID string, ws *webso
 	return nil
 }
 
+// HandleMessages 循环读取并解析客户端消息，交由底层逻辑进行路由
+func (l *IClientLogic) HandleMessages(ctx context.Context, ws *websocket.Conn) {
+	asyncCtx := context.WithoutCancel(ctx)
+	defer func(ws *websocket.Conn) {
+		err := ws.Close()
+		if err != nil {
+			g.Log().Error(asyncCtx, err)
+		}
+		g.Log(consts.SocketLogger).Info(ctx, "websocket connect closed")
+	}(ws)
+	for {
+		_, message, err := ws.ReadMessage()
+		if err != nil {
+			g.Log().Error(ctx, err)
+			l.RemoveClient(ws)
+			break
+		}
+		g.Log(consts.SocketLogger).Infof(ctx, "received handle: %s", message)
+
+		// 将收到的消息原样回传
+		//if err = ws.WriteMessage(msgType, message); err != nil {
+		//	break
+		//}
+
+		var msg dto.MessageOutputDTO
+		if err = json.Unmarshal(message, &msg); err != nil {
+			// 解析出错，记录日志或返回错误响应
+			g.Log(consts.SocketLogger).Error(ctx, err)
+			continue
+		}
+		l.RouteMessage(ctx, msg)
+	}
+}
+
 // RemoveClient 根据 websocket 连接移除客户端
 func (l *IClientLogic) RemoveClient(ws *websocket.Conn) {
 	var targetID string

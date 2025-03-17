@@ -42,8 +42,6 @@ func CreateTCPSocketServer(ctx context.Context) *ghttp.Server {
 
 		// 异步启动消息处理逻辑
 		go clientCtl.HandleMessages(ctx, ws)
-
-		g.Log(consts.SocketLogger).Info(ctx, "websocket connect closed")
 	})
 	ser.SetGraceful(true)
 	ser.EnableAdmin()
