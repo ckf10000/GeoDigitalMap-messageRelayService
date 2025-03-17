@@ -20,14 +20,15 @@ var (
 	Main = gcmd.Command{
 		Name:  "main",
 		Usage: "main",
-		Brief: "start message relay server",
+		Brief: "start handle relay server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) error {
 
 			// 创建多个服务器实例
 			servers := []*ghttp.Server{
-				RestAPIServer(ctx),
-				TCPSocketServer(ctx),
-				SSLSocketServer(ctx),
+				CreateRestAPIServer(ctx),
+				CreateTCPSocketServer(ctx),
+				CreateSSLSocketServer(ctx),
+				CreateFederationServer(ctx),
 			}
 
 			// 使用 goroutine 启动所有服务器

@@ -11,56 +11,39 @@ package cmd
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
+	clientCTL "GeoDigitalMap-messageRelayService/internal/controller/client"
+	"GeoDigitalMap-messageRelayService/internal/middleware/forward"
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/gorilla/websocket"
-	"net/http"
 )
 
-// WSUpGrader HTTP升级到WebSocket
-var WSUpGrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true // 允许所有来源连接(允许跨域)
-	},
-	// Error handler for upgrade failures
-	Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
-		// Implement error handling logic here
-	},
-}
-
-func TCPSocketServer(ctx context.Context) *ghttp.Server {
+func CreateTCPSocketServer(ctx context.Context) *ghttp.Server {
 	ser := g.Server(consts.TCPSocketService)
-	ser.SetLogger(g.Log(consts.TCPSocketService))
+	ser.SetLogger(g.Log(consts.SocketLogger))
 
 	// Bind WebSocket handler to / endpoint
-	ser.BindHandler("/", func(r *ghttp.Request) {
-		ws, err1 := WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
-		if err1 != nil {
-			r.Response.Write(err1.Error())
+	ser.BindHandler(consts.WSSROOT, func(r *ghttp.Request) {
+		clientCtl := clientCTL.NewV1()
+		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
+		if err != nil {
+			g.Log(consts.SocketLogger).Errorf(ctx, "WS upgrade failed: %+v", err)
+			r.Response.Write(err.Error())
 			return
 		}
 
-		defer func(ws *websocket.Conn) {
-			err2 := ws.Close()
-			if err2 != nil {
-				g.Log(consts.TCPSocketService).Error(ctx, err2)
-			}
-		}(ws)
-
-		for {
-			msgType, msg, err3 := ws.ReadMessage()
-			if err3 != nil {
-				break
-			}
-			g.Log(consts.TCPSocketService).Infof(ctx, "received message: %s", msg)
-			if err3 = ws.WriteMessage(msgType, msg); err3 != nil {
-				break
-			}
+		// 注册新的客户端连接，使用 RemoteAddr 作为示例标识（实际项目中建议使用唯一ID）
+		err = clientCtl.AddClient(ctx, r.RemoteAddr, ws)
+		if err != nil {
+			g.Log(consts.SocketLogger).Errorf(ctx, "Remote host connection failed: %+v", err)
+			r.Response.Write(err.Error())
+			return
 		}
-		g.Log(consts.TCPSocketService).Info(ctx, "websocket connect closed")
+
+		// 异步启动消息处理逻辑
+		go clientCtl.HandleMessages(ctx, ws)
+
+		g.Log(consts.SocketLogger).Info(ctx, "websocket connect closed")
 	})
 	ser.SetGraceful(true)
 	ser.EnableAdmin()

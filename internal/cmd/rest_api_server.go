@@ -4,28 +4,17 @@ package cmd
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
 	"GeoDigitalMap-messageRelayService/internal/controller/maintenance"
+	"GeoDigitalMap-messageRelayService/internal/middleware/persistence"
 	"context"
-	"errors"
-	_ "github.com/gogf/gf/contrib/drivers/pgsql/v2"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 )
 
-// connDb 检查数据库连接是否正常
-func connDb(ctx context.Context) error {
-	err := g.DB().PingMaster()
-	if err != nil {
-		return errors.New("connect to the database failed")
-	}
-	g.Log(consts.RestAPIService).Info(ctx, "database connect successful")
-	return nil
-}
-
-func RestAPIServer(ctx context.Context) *ghttp.Server {
+func CreateRestAPIServer(ctx context.Context) *ghttp.Server {
 	ser := g.Server(consts.RestAPIService)
-	ser.SetLogger(g.Log(consts.RestAPIService))
+	ser.SetLogger(g.Log(consts.RestAPILogger))
 	// 主路由定义
-	ser.Group("/api", func(group *ghttp.RouterGroup) {
+	ser.Group(consts.APIROOT, func(group *ghttp.RouterGroup) {
 		// 添加了一个全局中间件，处理响应数据
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		// 注册 V1 子路由
@@ -39,7 +28,7 @@ func RestAPIServer(ctx context.Context) *ghttp.Server {
 	ser.SetSwaggerUITemplate(consts.SwaggerUITemplate)
 
 	// 检查数据库是否能连接
-	err := connDb(ctx)
+	err := persistence.ConnDb(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +39,7 @@ func RestAPIServer(ctx context.Context) *ghttp.Server {
 
 // registerV1Routes 将 v1 路由注册逻辑单独封装
 func registerRestV1Routes(group *ghttp.RouterGroup) {
-	group.Group("/v1", func(v1 *ghttp.RouterGroup) {
+	group.Group(consts.V1, func(v1 *ghttp.RouterGroup) {
 		//v1.Middleware(middleware.Auth)
 		// TODO 添加自定义的中间件钩子
 
@@ -61,7 +50,7 @@ func registerRestV1Routes(group *ghttp.RouterGroup) {
 
 // registerMaintenanceRoutes 系统运维模块路由的封装
 func registerMaintenanceRoutes(group *ghttp.RouterGroup) {
-	group.Group("/maintenance", func(group *ghttp.RouterGroup) {
+	group.Group(consts.MAINTENANCEMODULE, func(group *ghttp.RouterGroup) {
 		group.Bind(maintenance.NewV1())
 	})
 }

@@ -1,20 +1,20 @@
-// Package consts
+// Package client
 /*********************************************************************************************************************
 * ProjectName:  GeoDigitalMap-messageRelayService
-* FileName:     service_type.go
+* FileName:     client_v1_add_client.go
 * Description:  TODO
 * Author:       zhouhanlin
-* CreateDate:   2025-03-15 01:22:12
+* CreateDate:   2025-03-17 11:07:49
 * Copyright ©2011-2025. Hunan xyz Company limited. All rights reserved.
 * *********************************************************************************************************************/
-package consts
+package client
 
-const (
-	TCPSocketService = "tcp-socket-service"
-	SSLSocketService = "ssl-socket-service"
-	RestAPIService   = "rest-api-service"
-	FederateService  = "federate-service"
-	RestAPILogger    = "rest-api"
-	SocketLogger     = "ws"
-	FederateLogger   = "federate"
+import (
+	"context"
+	"github.com/gorilla/websocket"
 )
+
+// AddClient 注册新的客户端连接
+func (c *ControllerV1) AddClient(ctx context.Context, clientID string, ws *websocket.Conn) error {
+	return c.clientLogic.AddClient(ctx, clientID, ws)
+}

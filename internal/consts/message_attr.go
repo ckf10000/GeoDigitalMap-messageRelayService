@@ -1,20 +1,27 @@
 // Package consts
 /*********************************************************************************************************************
 * ProjectName:  GeoDigitalMap-messageRelayService
-* FileName:     service_type.go
+* FileName:     message_attr.go
 * Description:  TODO
 * Author:       zhouhanlin
-* CreateDate:   2025-03-15 01:22:12
+* CreateDate:   2025-03-17 11:15:48
 * Copyright ©2011-2025. Hunan xyz Company limited. All rights reserved.
 * *********************************************************************************************************************/
 package consts
 
+// MessageType 定义消息类型
+type MessageType string
+
 const (
-	TCPSocketService = "tcp-socket-service"
-	SSLSocketService = "ssl-socket-service"
-	RestAPIService   = "rest-api-service"
-	FederateService  = "federate-service"
-	RestAPILogger    = "rest-api"
-	SocketLogger     = "ws"
-	FederateLogger   = "federate"
+	PointToPoint MessageType = "P2P"
+	PointToGroup MessageType = "P2G"
+	Broadcast    MessageType = "BROADCAST"
+)
+
+type MessageStatus int
+
+const (
+	StatusPending   MessageStatus = iota // 发送中
+	StatusDelivered                      // 已传达
+	StatusFailed                         // 已失败
 )

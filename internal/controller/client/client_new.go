@@ -1,20 +1,24 @@
-// Package consts
+// Package client
 /*********************************************************************************************************************
 * ProjectName:  GeoDigitalMap-messageRelayService
-* FileName:     service_type.go
+* FileName:     client_new.go
 * Description:  TODO
 * Author:       zhouhanlin
-* CreateDate:   2025-03-15 01:22:12
+* CreateDate:   2025-03-17 11:03:08
 * Copyright ©2011-2025. Hunan xyz Company limited. All rights reserved.
 * *********************************************************************************************************************/
-package consts
+package client
 
-const (
-	TCPSocketService = "tcp-socket-service"
-	SSLSocketService = "ssl-socket-service"
-	RestAPIService   = "rest-api-service"
-	FederateService  = "federate-service"
-	RestAPILogger    = "rest-api"
-	SocketLogger     = "ws"
-	FederateLogger   = "federate"
+import (
+	"GeoDigitalMap-messageRelayService/internal/logic/client"
 )
+
+type ControllerV1 struct {
+	clientLogic *client.IClientLogic
+}
+
+func NewV1() *ControllerV1 {
+	return &ControllerV1{
+		clientLogic: client.GetClientLogic(),
+	}
+}

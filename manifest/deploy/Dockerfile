@@ -12,7 +12,7 @@ LABEL maintainer="ckf10000@sina.com"
 ENV WORKDIR=/opt/GeoDigitalMap
 
 # 设置服务的运行端口
-EXPOSE 28001
+EXPOSE 28070 28080 28443 28090
 
 ###############################################################################
 #                               文件添加与权限设置
@@ -37,7 +37,7 @@ RUN chmod +x $WORKDIR/GeoDigitalMap-messageRelayService
 
 # 健康检查，每隔30秒检查一次，超时5秒，连续失败3次则标记为不健康
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget --spider -q http://127.0.0.1:28001/api/v1/maintenance/healthCheck || exit 1
+    CMD wget --spider -q http://127.0.0.1:28070/api/v1/maintenance/healthCheck || exit 1
 
 ###############################################################################
 #                                   启动服务

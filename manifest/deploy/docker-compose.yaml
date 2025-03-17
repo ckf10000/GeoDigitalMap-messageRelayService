@@ -6,14 +6,17 @@ services:
     container_name: geo_digital_map-message_relay_service
     restart: always
     ports:
-      - "28201:28201"
+      - "28070:28070"
+      - "28080:28080"
+      - "28443:28443"
+      - "28090:28090"
     volumes:
       - /opt/GeoDigitalMap/messageRelayService/logs:/opt/GeoDigitalMap/logs
       - /opt/GeoDigitalMap/messageRelayService/manifest:/opt/GeoDigitalMap/manifest
       #      - /opt/GeoDigitalMap/messageRelayService/config:/opt/GeoDigitalMap/config
       - /opt/GeoDigitalMap/messageRelayService/resource:/opt/GeoDigitalMap/resource
     healthcheck:
-      test: [ "CMD", "curl", "-X", "GET", "http://127.0.0.1:28301/api/v1/maintenance/healthCheck" ]
+      test: [ "CMD", "curl", "-X", "GET", "http://127.0.0.1:28070/api/v1/maintenance/healthCheck" ]
       interval: 30s
       timeout: 5s
       retries: 3
