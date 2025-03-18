@@ -26,9 +26,9 @@ var (
 			// 创建多个服务器实例
 			servers := []*ghttp.Server{
 				CreateRestAPIServer(ctx),
-				CreateTCPSocketServer(ctx),
+				CreateTCPSocketServer(),
 				CreateSSLSocketServer(ctx),
-				CreateFederationServer(ctx),
+				CreateFederationServer(),
 			}
 
 			// 使用 goroutine 启动所有服务器

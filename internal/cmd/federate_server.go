@@ -13,30 +13,30 @@ import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
 	federateCTL "GeoDigitalMap-messageRelayService/internal/controller/federate"
 	"GeoDigitalMap-messageRelayService/internal/middleware/forward"
-	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 )
 
-func CreateFederationServer(ctx context.Context) *ghttp.Server {
+func CreateFederationServer() *ghttp.Server {
 	s := g.Server(consts.FederateService)
 	s.SetLogger(g.Log(consts.FederateLogger))
 
 	// Bind WebSocket handler to / endpoint
 	s.BindHandler(consts.FEDERATEROOT, func(r *ghttp.Request) {
+		subCtx := r.Context()
 		federate := federateCTL.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
-			g.Log(consts.FederateService).Errorf(ctx, "WS upgrade failed: %+v", err)
+			g.Log(consts.FederateService).Errorf(subCtx, "WS upgrade failed: %+v", err)
 			return
 		}
-		err = federate.AddPeer(ctx, r.RemoteAddr, ws)
+		err = federate.AddPeer(subCtx, r.RemoteAddr, ws)
 		if err != nil {
-			g.Log(consts.FederateService).Errorf(ctx, "Adding peer failed, %+v", err)
+			g.Log(consts.FederateService).Errorf(subCtx, "Adding peer failed, %+v", err)
 			return
 		}
 		// 启动级联连接的消息和心跳处理
-		go federate.HandleFederateConnection(ctx, ws)
+		go federate.HandleFederateConnection(subCtx, ws)
 	})
 	s.SetGraceful(true)
 	s.EnableAdmin()

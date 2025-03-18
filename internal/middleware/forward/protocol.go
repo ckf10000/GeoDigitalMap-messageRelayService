@@ -10,6 +10,8 @@
 package forward
 
 import (
+	"GeoDigitalMap-messageRelayService/internal/consts"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gorilla/websocket"
 	"net/http"
 )
@@ -19,6 +21,7 @@ var WSUpGrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
 	CheckOrigin: func(r *http.Request) bool {
+		g.Log(consts.SocketLogger).Infof(r.Context(), "HTTP upgrade protocol, 'ua': %s, 'referer': %s", r.Header["User-Agent"], r.Header["Referer"])
 		return true // 允许所有来源连接(允许跨域)
 	},
 	// Error handler for upgrade failures

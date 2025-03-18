@@ -31,6 +31,7 @@ func (l *IClientLogic) AddClient(ctx context.Context, clientID string, ws *webso
 		Send: make(chan []byte, 1024),
 	}
 	l.clients.Store(clientID, client)
+	g.Log(consts.SocketLogger).Infof(ctx, "Client: %s has joined", clientID)
 	// 启动写入 goroutine 实现非阻塞消息发送
 	go l.WritePump(ctx, client)
 	return nil
@@ -42,14 +43,23 @@ func (l *IClientLogic) HandleMessages(ctx context.Context, ws *websocket.Conn) {
 	defer func(ws *websocket.Conn) {
 		err := ws.Close()
 		if err != nil {
-			g.Log().Error(asyncCtx, err)
+			g.Log(consts.SocketLogger).Error(asyncCtx, err)
 		}
-		g.Log(consts.SocketLogger).Info(ctx, "websocket connect closed")
+		//g.Log(consts.SocketLogger).Info(ctx, "websocket connect closed")
 	}(ws)
 	for {
 		_, message, err := ws.ReadMessage()
 		if err != nil {
-			g.Log().Error(ctx, err)
+			// 检查是否是客户端主动关闭连接
+			var closeErr *websocket.CloseError
+			if errors.As(err, &closeErr) {
+				switch closeErr.Code {
+				case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived:
+					g.Log(consts.SocketLogger).Warningf(ctx, "Client closed the connection")
+				default:
+					g.Log(consts.SocketLogger).Errorf(ctx, "client closed the connection with unexpected code: %+v", closeErr.Code)
+				}
+			}
 			l.RemoveClient(ws)
 			break
 		}
@@ -154,7 +164,7 @@ func (l *IClientLogic) WritePump(ctx context.Context, client *Client) {
 				return
 			}
 			if err := client.Conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-				g.Log(consts.SocketLogger).Error(asyncCtx, err)
+				//g.Log(consts.SocketLogger).Error(asyncCtx, err)
 				return
 			}
 		}

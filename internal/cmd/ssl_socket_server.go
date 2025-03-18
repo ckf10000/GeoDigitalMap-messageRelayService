@@ -26,24 +26,25 @@ func CreateSSLSocketServer(ctx context.Context) *ghttp.Server {
 
 	// Bind WebSocket handler to / endpoint
 	ser.BindHandler(consts.WSROOT, func(r *ghttp.Request) {
+		subCtx := r.Context()
 		clientCtl := clientCTL.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
-			g.Log(consts.SocketLogger).Errorf(ctx, "WS upgrade failed: %+v", err)
+			g.Log(consts.SocketLogger).Errorf(subCtx, "WS upgrade failed: %+v", err)
 			r.Response.Write(err.Error())
 			return
 		}
 
 		// 注册新的客户端连接，使用 RemoteAddr 作为示例标识（实际项目中建议使用唯一ID）
-		err = clientCtl.AddClient(ctx, r.RemoteAddr, ws)
+		err = clientCtl.AddClient(subCtx, r.RemoteAddr, ws)
 		if err != nil {
-			g.Log(consts.SocketLogger).Errorf(ctx, "Remote host connection failed: %+v", err)
+			g.Log(consts.SocketLogger).Errorf(subCtx, "Remote host connection failed: %+v", err)
 			r.Response.Write(err.Error())
 			return
 		}
 
 		// 异步启动消息处理逻辑
-		go clientCtl.HandleMessages(ctx, ws)
+		go clientCtl.HandleMessages(subCtx, ws)
 	})
 	ser.EnableHTTPS(crtPath, keyPath)
 	ser.SetGraceful(true)
