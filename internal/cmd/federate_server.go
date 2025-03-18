@@ -24,19 +24,19 @@ func CreateFederationServer() *ghttp.Server {
 	// Bind WebSocket handler to / endpoint
 	s.BindHandler(consts.FEDERATEROOT, func(r *ghttp.Request) {
 		subCtx := r.Context()
-		federate := federateCTL.NewV1()
+		federateCtl := federateCTL.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
 			g.Log(consts.FederateService).Errorf(subCtx, "WS upgrade failed: %+v", err)
 			return
 		}
-		err = federate.AddPeer(subCtx, r.RemoteAddr, ws)
+		err = federateCtl.AddPeer(subCtx, r.RemoteAddr, ws)
 		if err != nil {
 			g.Log(consts.FederateService).Errorf(subCtx, "Adding peer failed, %+v", err)
 			return
 		}
 		// 启动级联连接的消息和心跳处理
-		go federate.HandleFederateConnection(subCtx, ws)
+		go federateCtl.HandleFederateConnection(subCtx, ws)
 	})
 	s.SetGraceful(true)
 	s.EnableAdmin()
