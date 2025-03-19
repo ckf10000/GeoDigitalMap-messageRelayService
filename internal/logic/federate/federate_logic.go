@@ -177,7 +177,8 @@ func (l *IFederateLogic) ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto
 			for {
 				peer, err := l.connectToPeer(asyncCtx, hostAddrDTO)
 				if err != nil {
-					g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to connect to peer %s: %+v", hostAddrDTO.IP, err)
+					//g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to connect to peer %s: %+v", hostAddrDTO.IP, err)
+					g.Log(consts.FederateLogger).Error(asyncCtx, err)
 					count++
 					if count >= consts.FederateRetryConnectCount {
 						break
