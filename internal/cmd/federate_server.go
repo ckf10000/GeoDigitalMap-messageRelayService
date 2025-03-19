@@ -25,7 +25,7 @@ func CreateFederationServer(ctx context.Context) *ghttp.Server {
 
 	if !utils.CheckFederateLocalIP(ctx) {
 		str := "The configured federated address does not match the IP address of the deployment server"
-		g.Log(consts.FederateService).Error(ctx, str)
+		g.Log(consts.FederateLogger).Error(ctx, str)
 		return nil
 	}
 
@@ -35,12 +35,12 @@ func CreateFederationServer(ctx context.Context) *ghttp.Server {
 		federateCtl := federate.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
-			g.Log(consts.FederateService).Errorf(subCtx, "WS upgrade failed: %+v", err)
+			g.Log(consts.FederateLogger).Errorf(subCtx, "WS upgrade failed: %+v", err)
 			return
 		}
 		err = federateCtl.AddPeer(subCtx, r.RemoteAddr, ws)
 		if err != nil {
-			g.Log(consts.FederateService).Errorf(subCtx, "Adding peer failed, %+v", err)
+			g.Log(consts.FederateLogger).Errorf(subCtx, "Adding peer failed, %+v", err)
 			return
 		}
 		// 处理级联连接的消息和心跳处理
