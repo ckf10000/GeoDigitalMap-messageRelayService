@@ -21,6 +21,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gorilla/websocket"
+	"time"
 )
 
 // AddPeer 添加新的级联对端
@@ -155,4 +156,41 @@ func (l *IFederateLogic) GetAllPeerAddrs() []string {
 		peers = append(peers, addr)
 	}
 	return peers
+}
+
+func (l *IFederateLogic) connectToPeer(ctx context.Context, hostAddrDTO *dto.HostAddress) (*Peer, error) {
+	// 实现连接逻辑，例如 WebSocket 连接
+	url := fmt.Sprintf("ws://%s:%d%s", hostAddrDTO.IP, hostAddrDTO.Port, consts.FEDERATEROOT)
+	g.Log(consts.FederateLogger).Infof(ctx, "Start connecting: %s", url)
+	conn, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Peer{Conn: conn, Addr: hostAddrDTO.IP}, nil
+}
+
+func (l *IFederateLogic) ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto.HostAddress) {
+	for _, addrDTO := range hostAddrsDTO {
+		go func(hostAddrDTO *dto.HostAddress) {
+			asyncCtx := context.WithoutCancel(ctx)
+			count := 0
+			for {
+				peer, err := l.connectToPeer(asyncCtx, hostAddrDTO)
+				if err != nil {
+					g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to connect to peer %s: %+v", hostAddrDTO.IP, err)
+					count++
+					if count >= consts.FederateRetryConnectCount {
+						break
+					}
+					time.Sleep(consts.FederateRetryConnectinterval) // 重试间隔
+					continue
+				}
+				l.mu.Lock()
+				l.peers[hostAddrDTO.IP] = peer
+				l.mu.Unlock()
+				g.Log(consts.FederateLogger).Infof(asyncCtx, "Successfully connected to peer %s", hostAddrDTO.IP)
+				break
+			}
+		}(addrDTO)
+	}
 }

@@ -11,9 +11,12 @@ package utils
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
+	"GeoDigitalMap-messageRelayService/internal/model/dto"
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
 	"net"
 )
 
@@ -78,20 +81,32 @@ func GetFederateLocalIP(ctx context.Context) (localIP string) {
 	return
 }
 
-func GetFederateRemoteAddress(ctx context.Context) []string {
-	address := make([]string, 0, consts.FederatePeerCount)
+func GetFederateRemoteAddress(ctx context.Context) (hostAddrs []*dto.HostAddress) {
 	federateRemoteAddress := fmt.Sprintf("server.%s.federateRemoteAddress", consts.FederateService)
 	gvar1, err := g.Cfg().Get(ctx, federateRemoteAddress)
 	if err != nil {
-		return address
+		return
 	}
 	addressAll := gvar1.Strings()
 	for _, v := range addressAll {
-		if err = g.Validator().Data(v).Rules("ip").Run(ctx); err != nil {
-			g.Log(consts.FederateLogger).Errorf(ctx, "federate remote address: %s Format verification failed", v)
-			continue
+		if ok := gstr.ContainsAny(v, ":"); ok {
+			vSlice := gstr.SplitAndTrim(v, ":")
+			if len(vSlice) == 2 {
+				hostAddress := &dto.HostAddress{
+					IP:   vSlice[0],
+					Port: gconv.Uint32(vSlice[1]),
+				}
+				if err = g.Validator().Data(hostAddress).Run(ctx); err != nil {
+					g.Log(consts.FederateLogger).Error(ctx, err)
+					continue
+				}
+				hostAddrs = append(hostAddrs, hostAddress)
+			} else {
+				g.Log(consts.FederateLogger).Errorf(ctx, "Invalid address format: %s", v)
+			}
+		} else {
+			g.Log(consts.FederateLogger).Errorf(ctx, "Address is missing port: %s", v)
 		}
-		address = append(address, v)
 	}
-	return address
+	return
 }
