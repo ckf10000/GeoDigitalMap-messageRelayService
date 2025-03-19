@@ -2,7 +2,7 @@
 server:
   rest-api-service:
     address: ":28070"
-    isEnable: true                                           # 是否启用级联服务
+    isEnable: true                                           # 是否启用rest api服务
     openapiPath: "/api.json"
     swaggerPath: "/swagger"
     maxHeaderBytes: "20KB"
@@ -22,13 +22,13 @@ server:
     routeOverWrite: false                      # 当遇到重复路由注册时是否强制覆盖。默认为false，重复路由存在时将会在启动时报错退出
     dumpRouterMap: true                        # 是否在Server启动时打印所有的路由列表。默认为true
   tcp-socket-service:
-    isEnable: true                             # 是否启用级联服务
+    isEnable: true                             # 是否启用tcp websocket服务
     address: ":28080"
     logStdout: true                            # 日志是否输出到终端。默认为true
     errorStack: true                           # 当Server捕获到异常时是否记录堆栈信息到日志中。默认为true
   ssl-socket-service:
     address: ":28443"
-    isEnable: true                             # 是否启用级联服务
+    isEnable: true                             # 是否启用ssl websocket服务
     crtPath: "manifest/certs/server.crt"       # ssl证书文件
     keyPath: "manifest/certs/server.key"       # ssl rsa私钥文件
     logStdout: true                            # 日志是否输出到终端。默认为true
