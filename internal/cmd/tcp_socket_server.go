@@ -11,7 +11,7 @@ package cmd
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
-	clientCTL "GeoDigitalMap-messageRelayService/internal/controller/client"
+	"GeoDigitalMap-messageRelayService/internal/controller/client"
 	"GeoDigitalMap-messageRelayService/internal/middleware/forward"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -24,7 +24,7 @@ func CreateTCPSocketServer() *ghttp.Server {
 	// Bind WebSocket handler to / endpoint
 	ser.BindHandler(consts.WSSROOT, func(r *ghttp.Request) {
 		subCtx := r.Context()
-		clientCtl := clientCTL.NewV1()
+		clientCtl := client.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
 			g.Log(consts.SocketLogger).Errorf(subCtx, "WS upgrade failed: %+v", err)

@@ -12,6 +12,7 @@ package cmd
 import (
 	"GeoDigitalMap-messageRelayService/internal/common/utils"
 	"GeoDigitalMap-messageRelayService/internal/consts"
+	"GeoDigitalMap-messageRelayService/internal/controller/manager"
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -24,6 +25,11 @@ var (
 		Usage: "main",
 		Brief: "start message relay server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) error {
+
+			// 初始化全局变量
+			manager.NewControllerManagerClientV1()
+			federateManagerCtl := manager.NewControllerManagerFederateV1()
+			isFederatePeerEnable := false
 
 			// 创建服务器实例池
 			servers := make([]*ghttp.Server, 0, consts.ServiceInstancePoolCapacity)
@@ -54,6 +60,7 @@ var (
 					return nil
 				}
 				servers = append(servers, ser)
+				isFederatePeerEnable = true
 			}
 
 			// 使用 goroutine 启动所有服务器
@@ -63,6 +70,11 @@ var (
 					server.Run()
 				}()
 
+			}
+
+			if isFederatePeerEnable {
+				// 连接所有的federate peer
+				federateManagerCtl.ConnectToPeers(ctx)
 			}
 
 			// 主进程阻塞等待

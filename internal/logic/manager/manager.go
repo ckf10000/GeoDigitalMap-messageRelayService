@@ -10,19 +10,26 @@
 package manager
 
 import (
+	"GeoDigitalMap-messageRelayService/internal/model/dto"
 	"context"
+	"github.com/gorilla/websocket"
 )
 
 // IClientLogic 接口定义
 type IClientLogic interface {
 	GetAllClientIDs() []string
 	SendBroadcastMessage(ctx context.Context, message []byte)
+	AddClient(ctx context.Context, id string, conn *websocket.Conn) error
+	HandleMessages(ctx context.Context, conn *websocket.Conn)
 }
 
 // IFederateLogic 接口定义
 type IFederateLogic interface {
 	GetAllPeerAddrs() []string
 	SendBroadcastMessage(ctx context.Context, message []byte, federateSource []string)
+	ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto.HostAddress)
+	AddPeer(ctx context.Context, addr string, conn *websocket.Conn) error
+	HandleMessages(ctx context.Context, conn *websocket.Conn)
 }
 
 // globalClientLogic 全局单例，便于其它模块调用管理在线客户端

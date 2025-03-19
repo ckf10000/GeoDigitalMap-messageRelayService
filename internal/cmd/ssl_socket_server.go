@@ -11,7 +11,7 @@ package cmd
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
-	clientCTL "GeoDigitalMap-messageRelayService/internal/controller/client"
+	"GeoDigitalMap-messageRelayService/internal/controller/client"
 	"GeoDigitalMap-messageRelayService/internal/middleware/cert"
 	"GeoDigitalMap-messageRelayService/internal/middleware/forward"
 	"context"
@@ -27,7 +27,7 @@ func CreateSSLSocketServer(ctx context.Context) *ghttp.Server {
 	// Bind WebSocket handler to / endpoint
 	ser.BindHandler(consts.WSROOT, func(r *ghttp.Request) {
 		subCtx := r.Context()
-		clientCtl := clientCTL.NewV1()
+		clientCtl := client.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
 			g.Log(consts.SocketLogger).Errorf(subCtx, "WS upgrade failed: %+v", err)
