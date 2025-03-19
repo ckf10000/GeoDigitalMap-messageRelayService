@@ -32,8 +32,8 @@ func CreateRestAPIServer(ctx context.Context) *ghttp.Server {
 	if err != nil {
 		return nil
 	}
-	ser.SetGraceful(true)
-	ser.EnableAdmin()
+	//ser.SetGraceful(true)
+	//ser.EnableAdmin()
 	return ser
 }
 

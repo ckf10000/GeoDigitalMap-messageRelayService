@@ -46,8 +46,8 @@ func CreateFederationServer(ctx context.Context) *ghttp.Server {
 		// 处理级联连接的消息和心跳处理
 		go federateCtl.HandleMessages(subCtx, ws)
 	})
-	ser.SetGraceful(true)
-	ser.EnableAdmin()
+	//ser.SetGraceful(true)
+	//ser.EnableAdmin()
 	// Configure static file serving
 	//ser.SetServerRoot("static")
 	// Set server port
