@@ -10,15 +10,18 @@
 package federate
 
 import (
-	federateLogic "GeoDigitalMap-messageRelayService/internal/logic/federate"
+	"GeoDigitalMap-messageRelayService/internal/logic/federate"
+	"GeoDigitalMap-messageRelayService/internal/logic/manager"
 )
 
 type ControllerV1 struct {
-	federate *federateLogic.IFederateLogic
+	federateLogic *federate.IFederateLogic
 }
 
 func NewV1() *ControllerV1 {
+	federateLogic := federate.NewIFederateLogic()
+	manager.SetFederatePeerLogic(federateLogic)
 	return &ControllerV1{
-		federate: federateLogic.NewFederateLogic(),
+		federateLogic: federateLogic,
 	}
 }

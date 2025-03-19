@@ -24,3 +24,8 @@ type MessageOutputDTO struct {
 	RetryCount  int                  `json:"retry_count" orm:"retry_count"`
 	MessageType consts.MessageType   `json:"message_type" orm:"message_type"`
 }
+
+type BroadcastMessageOutputDTO struct {
+	MessageOutput  *MessageOutputDTO
+	FederateSource []string `json:"federateSource"` // 标记消息来源
+}

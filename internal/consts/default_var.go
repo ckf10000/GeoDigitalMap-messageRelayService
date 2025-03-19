@@ -9,6 +9,12 @@
 * *********************************************************************************************************************/
 package consts
 
+import "time"
+
 const (
-	ShardCount = 32 // 根据CPU核心数动态调整
+	ShardCount              = 32               // 根据CPU核心数动态调整
+	FederatePeerCount       = 1024             // 最多可级联的对端设备数量
+	SocketClientCount       = 100000           // 最多可接入客户端的数量
+	MessageChannelSize      = 1024             // 消息通道缓冲区大小
+	ClientHeartbeatDuration = 60 * time.Second // server 检测 socket client 的心跳周期
 )

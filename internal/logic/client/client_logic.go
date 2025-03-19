@@ -10,94 +10,134 @@
 package client
 
 import (
+	"GeoDigitalMap-messageRelayService/internal/common/utils"
 	"GeoDigitalMap-messageRelayService/internal/consts"
+	"GeoDigitalMap-messageRelayService/internal/logic/manager"
 	"GeoDigitalMap-messageRelayService/internal/model/dto"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gorilla/websocket"
 	"time"
 )
 
+// WritePump 方法负责从 Send 通道中读取消息并发送给客户端，带有心跳检测
+func (c *Client) WritePump(ctx context.Context) {
+	asyncCtx := context.WithoutCancel(ctx)
+	ticker := time.NewTicker(consts.ClientHeartbeatDuration)
+	defer func() {
+		ticker.Stop()
+		err := c.Conn.Close()
+		if err != nil {
+			g.Log(consts.SocketLogger).Error(asyncCtx, err)
+			return
+		} // 关闭连接
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.Send:
+			if !ok {
+				// 通道关闭，退出循环
+				return
+			}
+
+			// 发送消息给客户端
+			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				g.Log(consts.SocketLogger).Errorf(ctx, "Write message error: %+v", err)
+				return
+			}
+		}
+	}
+}
+
 // AddClient 添加新的客户端，clientID 建议使用全局唯一标识
-func (l *IClientLogic) AddClient(ctx context.Context, clientID string, ws *websocket.Conn) error {
-	if ws == nil || clientID == "" {
-		return errors.New("invalid client connection or ID")
+func (l *IClientLogic) AddClient(ctx context.Context, id string, conn *websocket.Conn) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if len(l.clients) >= consts.SocketClientCount {
+		str := fmt.Sprintf("Exceeded the maximum connection limit of %d client devices", consts.SocketClientCount)
+		g.Log(consts.SocketLogger).Error(ctx, str)
+		return gerror.New(str)
 	}
+
+	// 创建带缓冲的发送通道
 	client := &Client{
-		ID:   clientID,
-		Conn: ws,
-		Send: make(chan []byte, 1024),
+		ID:   id,
+		Conn: conn,
+		Send: make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
 	}
-	l.clients.Store(clientID, client)
-	g.Log(consts.SocketLogger).Infof(ctx, "Client: %s has joined", clientID)
-	// 启动写入 goroutine 实现非阻塞消息发送
-	go l.WritePump(ctx, client)
+
+	l.clients[id] = client
+
+	// 启动一个 goroutine 处理消息发送
+	go client.WritePump(ctx)
+
+	g.Log(consts.SocketLogger).Infof(ctx, "New client connected: %s", id)
 	return nil
 }
 
 // HandleMessages 循环读取并解析客户端消息，交由底层逻辑进行路由
-func (l *IClientLogic) HandleMessages(ctx context.Context, ws *websocket.Conn) {
+func (l *IClientLogic) HandleMessages(ctx context.Context, conn *websocket.Conn) {
 	asyncCtx := context.WithoutCancel(ctx)
-	defer func(ws *websocket.Conn) {
-		err := ws.Close()
-		if err != nil {
-			g.Log(consts.SocketLogger).Error(asyncCtx, err)
-		}
-		//g.Log(consts.SocketLogger).Info(ctx, "websocket connect closed")
-	}(ws)
+	clientID := conn.RemoteAddr().String()
+
+	// 客户端断开时移除
+	defer func() {
+		l.RemoveClient(asyncCtx, clientID)
+	}()
+
 	for {
-		_, message, err := ws.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		if err != nil {
-			// 检查是否是客户端主动关闭连接
+			// 检查是否是Peer主动关闭连接
 			var closeErr *websocket.CloseError
 			if errors.As(err, &closeErr) {
 				switch closeErr.Code {
 				case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived:
-					g.Log(consts.SocketLogger).Warningf(ctx, "Client closed the connection")
+					g.Log(consts.SocketLogger).Warningf(asyncCtx, "Peer closed the connection")
 				default:
-					g.Log(consts.SocketLogger).Errorf(ctx, "client closed the connection with unexpected code: %+v", closeErr.Code)
+					g.Log(consts.SocketLogger).Errorf(asyncCtx, "client closed the connection with unexpected code: %+v", closeErr.Code)
 				}
+			} else {
+				g.Log(consts.SocketLogger).Infof(asyncCtx, "received handle: %s", message)
 			}
-			l.RemoveClient(ws)
 			break
 		}
-		g.Log(consts.SocketLogger).Infof(ctx, "received handle: %s", message)
 
-		// 将收到的消息原样回传
-		//if err = ws.WriteMessage(msgType, message); err != nil {
-		//	break
-		//}
+		g.Log(consts.SocketLogger).Infof(asyncCtx, "received message: %+v", message)
 
-		var msg dto.MessageOutputDTO
-		if err = json.Unmarshal(message, &msg); err != nil {
-			// 解析出错，记录日志或返回错误响应
-			g.Log(consts.SocketLogger).Error(ctx, err)
+		// 处理消息逻辑
+		var msg *dto.MessageOutputDTO
+		if err = json.Unmarshal(message, msg); err != nil {
+			g.Log(consts.SocketLogger).Errorf(ctx, "Failed to parse message: %+v", err)
 			continue
 		}
+
 		l.RouteMessage(ctx, msg)
+		// TODO 消息持久化
+
 	}
 }
 
 // RemoveClient 根据 websocket 连接移除客户端
-func (l *IClientLogic) RemoveClient(ws *websocket.Conn) {
-	var targetID string
-	l.clients.Range(func(key, value interface{}) bool {
-		client := value.(*Client)
-		if client.Conn == ws {
-			targetID = client.ID
-			return false
-		}
-		return true
-	})
-	if targetID != "" {
-		l.clients.Delete(targetID)
+func (l *IClientLogic) RemoveClient(ctx context.Context, clientID string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if client, exists := l.clients[clientID]; exists {
+		close(client.Send) // 关闭通道
+		delete(l.clients, clientID)
+		g.Log(consts.SocketLogger).Infof(ctx, "Client disconnected: %s", clientID)
 	}
 }
 
 // RouteMessage 根据消息类型进行路由分发
-func (l *IClientLogic) RouteMessage(ctx context.Context, msg dto.MessageOutputDTO) {
+func (l *IClientLogic) RouteMessage(ctx context.Context, msg *dto.MessageOutputDTO) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		g.Log(consts.SocketLogger).Error(ctx, err)
@@ -105,78 +145,92 @@ func (l *IClientLogic) RouteMessage(ctx context.Context, msg dto.MessageOutputDT
 	}
 	switch msg.MessageType {
 	case consts.PointToPoint, consts.PointToGroup:
-		for _, targetID := range msg.Receivers {
-			if v, ok := l.clients.Load(targetID); ok {
-				client := v.(*Client)
-				select {
-				case client.Send <- data:
-				default:
-					// 如果 channel 满则丢弃该消息
-				}
-			}
-		}
+		l.SendP2GMessage(ctx, msg.Receivers, data)
 	case consts.Broadcast:
-		l.clients.Range(func(key, value interface{}) bool {
-			client := value.(*Client)
-			select {
-			case client.Send <- data:
-			default:
-				// 丢弃消息以保证广播不被阻塞
+		l.SendBroadcastMessage(ctx, data)
+		// 判断Federate的peer列表是否为空
+		if len(manager.GetAllPeerAddrs()) != 0 {
+			// 将消息广播给所有 federate 的 peer
+			localIP := utils.GetFederateLocalIP(ctx)
+			if len(localIP) > 0 {
+				manager.GetFederatePeerLogic().SendBroadcastMessage(ctx, data, []string{localIP})
 			}
-			return true
-		})
+		}
+
+	default:
+		g.Log(consts.SocketLogger).Errorf(ctx, "Unsupported message types: %s", msg.MessageType)
 	}
+
+	// 持久化消息
+	//SaveMessage(ctx, sender, receiver, "private", message)
 }
 
-// WritePump 将消息写入客户端连接，附带心跳检测
-func (l *IClientLogic) WritePump(ctx context.Context, client *Client) {
-	asyncCtx := context.WithoutCancel(ctx)
-	ticker := time.NewTicker(54 * time.Second)
-	defer func() {
-		ticker.Stop()
-		err := client.Conn.Close()
-		if err != nil {
-			g.Log(consts.SocketLogger).Error(asyncCtx, err)
-			return
-		}
-	}()
-	for {
+// SendP2PMessage 发送私聊
+func (l *IClientLogic) SendP2PMessage(ctx context.Context, receiver string, message []byte) error {
+	l.mu.RLock()
+	receiverClient, exists := l.clients[receiver]
+	l.mu.RUnlock()
+
+	if !exists {
+		str := fmt.Sprintf("receiver <%s> not found", receiver)
+		g.Log(consts.SocketLogger).Error(ctx, str)
+		return gerror.New(str)
+	}
+
+	// 将消息写入客户端的 Send 通道
+	select {
+	case receiverClient.Send <- message:
+		// 消息成功写入通道
+	default:
+		// 通道已满，丢弃消息或记录日志
+		g.Log(consts.SocketLogger).Warningf(ctx, "Send channel is full, message dropped for client: %s", receiver)
+	}
+
+	return nil
+}
+
+// SendP2GMessage 发送群聊
+func (l *IClientLogic) SendP2GMessage(ctx context.Context, receivers []string, message []byte) {
+	for _, receiver := range receivers {
+		_ = l.SendP2PMessage(ctx, receiver, message)
+	}
+	return
+}
+
+// SendBroadcastMessage 发送广播消息
+func (l *IClientLogic) SendBroadcastMessage(ctx context.Context, message []byte) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	for _, client := range l.clients {
+		// 将消息写入客户端的 Send 通道
 		select {
-		case message, ok := <-client.Send:
-			if !ok {
-				if err := client.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-					g.Log(consts.SocketLogger).Error(asyncCtx, err)
-					return
-				}
-				return
-			}
-			if err := client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-				g.Log(consts.SocketLogger).Error(asyncCtx, err)
-				return
-			}
-			if err := client.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				g.Log(consts.SocketLogger).Error(asyncCtx, err)
-				return
-			}
-		case <-ticker.C:
-			if err := client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-				g.Log(consts.SocketLogger).Error(asyncCtx, err)
-				return
-			}
-			if err := client.Conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-				//g.Log(consts.SocketLogger).Error(asyncCtx, err)
-				return
-			}
+		case client.Send <- message:
+			// 消息成功写入通道
+		default:
+			// 通道已满，丢弃消息或记录日志
+			g.Log(consts.SocketLogger).Warningf(ctx, "Send channel is full, message dropped for client: %s", client.ID)
 		}
 	}
+
+	return
 }
 
-// GetAllClients 返回所有在线客户端的 ID 列表，便于管理监控
-func (l *IClientLogic) GetAllClients() []string {
-	var clientIDs []string
-	l.clients.Range(func(key, _ interface{}) bool {
-		clientIDs = append(clientIDs, key.(string))
-		return true
-	})
-	return clientIDs
+// GetAllClients 返回所有在线客户端的 map，便于管理监控
+func (l *IClientLogic) GetAllClients() map[string]*Client {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.clients
+}
+
+// GetAllClientIDs 返回所有在线客户端的 ID 列表
+func (l *IClientLogic) GetAllClientIDs() []string {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	clients := make([]string, 0, len(l.clients))
+	for id := range l.clients {
+		clients = append(clients, id)
+	}
+	return clients
 }

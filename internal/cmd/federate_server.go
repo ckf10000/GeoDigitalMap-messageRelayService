@@ -35,8 +35,8 @@ func CreateFederationServer() *ghttp.Server {
 			g.Log(consts.FederateService).Errorf(subCtx, "Adding peer failed, %+v", err)
 			return
 		}
-		// 启动级联连接的消息和心跳处理
-		go federateCtl.HandleFederateConnection(subCtx, ws)
+		// 处理级联连接的消息和心跳处理
+		go federateCtl.HandleMessages(subCtx, ws)
 	})
 	s.SetGraceful(true)
 	s.EnableAdmin()

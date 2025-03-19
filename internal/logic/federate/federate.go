@@ -15,10 +15,13 @@ import (
 
 // IFederateLogic 负责级联对端的管理与消息转发
 type IFederateLogic struct {
-	peers sync.Map // map[string]*FederatedPeer
+	peers map[string]*Peer
+	mu    sync.RWMutex
 }
 
-// NewFederateLogic 构造新的级联逻辑实例
-func NewFederateLogic() *IFederateLogic {
-	return &IFederateLogic{}
+// NewIFederateLogic 构造新的级联逻辑实例
+func NewIFederateLogic() *IFederateLogic {
+	return &IFederateLogic{
+		peers: make(map[string]*Peer),
+	}
 }

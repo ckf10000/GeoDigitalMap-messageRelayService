@@ -16,17 +16,20 @@ import (
 
 // Client 表示一个客户端连接
 type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	Send chan []byte
+	ID   string          // 客户端唯一标识
+	Conn *websocket.Conn // WebSocket 连接
+	Send chan []byte     // 带缓冲的发送通道
 }
 
 // IClientLogic 管理所有客户端连接及消息路由
 type IClientLogic struct {
-	clients sync.Map // map[string]*Client
+	clients map[string]*Client
+	mu      sync.RWMutex
 }
 
 // NewIClientLogic 构造新的 ClientLogic 实例
 func NewIClientLogic() *IClientLogic {
-	return &IClientLogic{}
+	return &IClientLogic{
+		clients: make(map[string]*Client),
+	}
 }

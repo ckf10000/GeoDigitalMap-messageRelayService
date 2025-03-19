@@ -20,7 +20,7 @@ var (
 	Main = gcmd.Command{
 		Name:  "main",
 		Usage: "main",
-		Brief: "start handle relay server",
+		Brief: "start message relay server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) error {
 
 			// 创建多个服务器实例

@@ -11,6 +11,7 @@ package client
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/logic/client"
+	"GeoDigitalMap-messageRelayService/internal/logic/manager"
 )
 
 type ControllerV1 struct {
@@ -18,7 +19,9 @@ type ControllerV1 struct {
 }
 
 func NewV1() *ControllerV1 {
+	clientLogic := client.NewIClientLogic()
+	manager.SetClientLogic(clientLogic)
 	return &ControllerV1{
-		clientLogic: client.GetClientLogic(),
+		clientLogic: clientLogic,
 	}
 }

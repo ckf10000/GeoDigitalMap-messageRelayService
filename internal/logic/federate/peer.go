@@ -1,19 +1,20 @@
 // Package federate
 /*********************************************************************************************************************
 * ProjectName:  GeoDigitalMap-messageRelayService
-* FileName:     federate_v1_add_peer.go
+* FileName:     peer.go
 * Description:  TODO
 * Author:       zhouhanlin
-* CreateDate:   2025-03-17 00:40:53
+* CreateDate:   2025-03-18 17:44:08
 * Copyright ©2011-2025. Hunan xyz Company limited. All rights reserved.
 * *********************************************************************************************************************/
 package federate
 
-import (
-	"context"
-	"github.com/gorilla/websocket"
-)
+import "github.com/gorilla/websocket"
 
-func (c *ControllerV1) AddPeer(ctx context.Context, remoteAddr string, ws *websocket.Conn) error {
-	return c.federateLogic.AddPeer(ctx, remoteAddr, ws)
+// Peer 表示一个级联对端连接
+type Peer struct {
+	Addr string
+	Conn *websocket.Conn
+	// 带缓冲的发送 channel，避免因客户端写入速度较慢导致阻塞
+	Send chan []byte
 }
