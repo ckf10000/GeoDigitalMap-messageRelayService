@@ -18,11 +18,11 @@ import (
 )
 
 func CreateFederationServer() *ghttp.Server {
-	s := g.Server(consts.FederateService)
-	s.SetLogger(g.Log(consts.FederateLogger))
+	ser := g.Server(consts.FederateService)
+	ser.SetLogger(g.Log(consts.FederateLogger))
 
 	// Bind WebSocket handler to / endpoint
-	s.BindHandler(consts.FEDERATEROOT, func(r *ghttp.Request) {
+	ser.BindHandler(consts.FEDERATEROOT, func(r *ghttp.Request) {
 		subCtx := r.Context()
 		federateCtl := federateCTL.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
@@ -38,11 +38,11 @@ func CreateFederationServer() *ghttp.Server {
 		// 处理级联连接的消息和心跳处理
 		go federateCtl.HandleMessages(subCtx, ws)
 	})
-	s.SetGraceful(true)
-	s.EnableAdmin()
+	//ser.SetGraceful(true)
+	//ser.EnableAdmin()
 	// Configure static file serving
 	//ser.SetServerRoot("static")
 	// Set server port
 	//ser.SetPort(28090)
-	return s
+	return ser
 }

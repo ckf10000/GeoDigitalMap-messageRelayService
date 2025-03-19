@@ -47,8 +47,8 @@ func CreateSSLSocketServer(ctx context.Context) *ghttp.Server {
 		go clientCtl.HandleMessages(subCtx, ws)
 	})
 	ser.EnableHTTPS(crtPath, keyPath)
-	ser.SetGraceful(true)
-	ser.EnableAdmin()
+	//ser.SetGraceful(true)
+	//ser.EnableAdmin()
 	// Configure static file serving
 	//ser.SetServerRoot("static")
 	// Set server port

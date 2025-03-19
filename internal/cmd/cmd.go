@@ -10,6 +10,7 @@
 package cmd
 
 import (
+	"GeoDigitalMap-messageRelayService/internal/common/utils"
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -34,9 +35,12 @@ var (
 			// 使用 goroutine 启动所有服务器
 			for _, s := range servers {
 				server := s // 避免闭包捕获问题
-				go func() {
-					server.Run()
-				}()
+				isServiceEnable := utils.GetServiceEnableStatus(ctx, server.GetName())
+				if isServiceEnable {
+					go func() {
+						server.Run()
+					}()
+				}
 			}
 
 			// 主进程阻塞等待
