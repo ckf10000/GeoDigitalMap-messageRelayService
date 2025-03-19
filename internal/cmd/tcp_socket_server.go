@@ -43,8 +43,8 @@ func CreateTCPSocketServer() *ghttp.Server {
 		// 异步启动消息处理逻辑
 		go clientCtl.HandleMessages(subCtx, ws)
 	})
-	//ser.SetGraceful(true)
-	//ser.EnableAdmin()
+	ser.SetGraceful(true)
+	ser.EnableAdmin()
 	// Configure static file serving
 	//ser.SetServerRoot("static")
 	// Set server port

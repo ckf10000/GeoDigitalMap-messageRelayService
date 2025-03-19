@@ -30,10 +30,10 @@ func CreateRestAPIServer(ctx context.Context) *ghttp.Server {
 	// 检查数据库是否能连接
 	err := persistence.ConnDb(ctx)
 	if err != nil {
-		panic(err)
+		return nil
 	}
-	//ser.SetGraceful(true)
-	//ser.EnableAdmin()
+	ser.SetGraceful(true)
+	ser.EnableAdmin()
 	return ser
 }
 

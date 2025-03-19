@@ -11,6 +11,7 @@ package cmd
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/common/utils"
+	"GeoDigitalMap-messageRelayService/internal/consts"
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -24,23 +25,44 @@ var (
 		Brief: "start message relay server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) error {
 
-			// 创建多个服务器实例
-			servers := []*ghttp.Server{
-				CreateRestAPIServer(ctx),
-				CreateTCPSocketServer(),
-				CreateSSLSocketServer(ctx),
-				CreateFederationServer(),
+			// 创建服务器实例池
+			servers := make([]*ghttp.Server, 0, consts.ServiceInstancePoolCapacity)
+			if isServiceEnable := utils.GetServiceEnableStatus(ctx, consts.RestAPIService); isServiceEnable {
+				ser := CreateRestAPIServer(ctx)
+				if ser == nil {
+					return nil
+				}
+				servers = append(servers, ser)
+			}
+			if isServiceEnable := utils.GetServiceEnableStatus(ctx, consts.TCPSocketService); isServiceEnable {
+				ser := CreateTCPSocketServer()
+				if ser == nil {
+					return nil
+				}
+				servers = append(servers, ser)
+			}
+			if isServiceEnable := utils.GetServiceEnableStatus(ctx, consts.SSLSocketService); isServiceEnable {
+				ser := CreateSSLSocketServer(ctx)
+				if ser == nil {
+					return nil
+				}
+				servers = append(servers, ser)
+			}
+			if isServiceEnable := utils.GetServiceEnableStatus(ctx, consts.FederateService); isServiceEnable {
+				ser := CreateFederationServer(ctx)
+				if ser == nil {
+					return nil
+				}
+				servers = append(servers, ser)
 			}
 
 			// 使用 goroutine 启动所有服务器
 			for _, s := range servers {
 				server := s // 避免闭包捕获问题
-				isServiceEnable := utils.GetServiceEnableStatus(ctx, server.GetName())
-				if isServiceEnable {
-					go func() {
-						server.Run()
-					}()
-				}
+				go func() {
+					server.Run()
+				}()
+
 			}
 
 			// 主进程阻塞等待

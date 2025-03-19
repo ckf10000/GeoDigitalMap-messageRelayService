@@ -10,21 +10,29 @@
 package cmd
 
 import (
+	"GeoDigitalMap-messageRelayService/internal/common/utils"
 	"GeoDigitalMap-messageRelayService/internal/consts"
-	federateCTL "GeoDigitalMap-messageRelayService/internal/controller/federate"
+	"GeoDigitalMap-messageRelayService/internal/controller/federate"
 	"GeoDigitalMap-messageRelayService/internal/middleware/forward"
+	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 )
 
-func CreateFederationServer() *ghttp.Server {
+func CreateFederationServer(ctx context.Context) *ghttp.Server {
 	ser := g.Server(consts.FederateService)
 	ser.SetLogger(g.Log(consts.FederateLogger))
+
+	if !utils.CheckFederateLocalIP(ctx) {
+		str := "The configured federated address does not match the IP address of the deployment server"
+		g.Log(consts.FederateService).Error(ctx, str)
+		return nil
+	}
 
 	// Bind WebSocket handler to / endpoint
 	ser.BindHandler(consts.FEDERATEROOT, func(r *ghttp.Request) {
 		subCtx := r.Context()
-		federateCtl := federateCTL.NewV1()
+		federateCtl := federate.NewV1()
 		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
 		if err != nil {
 			g.Log(consts.FederateService).Errorf(subCtx, "WS upgrade failed: %+v", err)
@@ -38,8 +46,8 @@ func CreateFederationServer() *ghttp.Server {
 		// 处理级联连接的消息和心跳处理
 		go federateCtl.HandleMessages(subCtx, ws)
 	})
-	//ser.SetGraceful(true)
-	//ser.EnableAdmin()
+	ser.SetGraceful(true)
+	ser.EnableAdmin()
 	// Configure static file serving
 	//ser.SetServerRoot("static")
 	// Set server port

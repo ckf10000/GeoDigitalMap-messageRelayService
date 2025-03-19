@@ -12,8 +12,8 @@ package persistence
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
 	"context"
-	"errors"
 	_ "github.com/gogf/gf/contrib/drivers/pgsql/v2"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 )
 
@@ -21,7 +21,9 @@ import (
 func ConnDb(ctx context.Context) error {
 	err := g.DB().PingMaster()
 	if err != nil {
-		return errors.New("connect to the database failed")
+		str := "connect to the database failed"
+		g.Log(consts.RestAPILogger).Error(ctx, str)
+		return gerror.New(str)
 	}
 	g.Log(consts.RestAPILogger).Info(ctx, "database connect successful")
 	return nil
