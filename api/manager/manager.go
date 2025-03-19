@@ -1,15 +1,20 @@
-// Package dto
+// Package manager
 /*********************************************************************************************************************
 * ProjectName:  GeoDigitalMap-messageRelayService
-* FileName:     network.go
+* FileName:     manager.go
 * Description:  TODO
 * Author:       zhouhanlin
-* CreateDate:   2025-03-19 21:36:40
+* CreateDate:   2025-03-19 23:34:29
 * Copyright ©2011-2025. Hunan xyz Company limited. All rights reserved.
 * *********************************************************************************************************************/
-package dto
+package manager
 
-type HostAddress struct {
-	IP   string `json:"ip" v:"ip"`                   // ip地址
-	Port uint32 `json:"port" v:"min:1025|max:65535"` // 端口号
+import (
+	"context"
+
+	"GeoDigitalMap-messageRelayService/api/manager/v1"
+)
+
+type IManagerV1 interface {
+	AddPeer(ctx context.Context, req *v1.AddPeerReq) (res *v1.AddPeerRes, err error)
 }

@@ -24,17 +24,39 @@ import (
 	"time"
 )
 
-// AddPeer 添加新的级联对端
-func (l *IFederateLogic) AddPeer(ctx context.Context, addr string, conn *websocket.Conn) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
+func (l *IFederateLogic) checkAddPeer(ctx context.Context, addr string) error {
+	// 检查是否超过最大数量
 	if len(l.peers) >= consts.FederatePeerCount {
 		str := fmt.Sprintf("Exceeded the maximum cascading limit of %d peer devices", consts.FederatePeerCount)
 		g.Log(consts.FederateLogger).Error(ctx, str)
 		return gerror.New(str)
 	}
 
+	// 先加读锁检查是否已存在
+	l.mu.RLock()
+	_, exists := l.peers[addr]
+	l.mu.RUnlock()
+
+	if exists {
+		str := fmt.Sprintf("Peer <%s> already exists", addr)
+		g.Log(consts.FederateLogger).Error(ctx, str)
+		return gerror.New(str)
+	}
+
+	// 再加写锁修改数据
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// 再次检查，防止并发情况下同一地址重复添加
+	if _, exists = l.peers[addr]; exists {
+		str := fmt.Sprintf("Peer <%s> already exists", addr)
+		g.Log(consts.FederateLogger).Error(ctx, str)
+		return gerror.New(str)
+	}
+	return nil
+}
+
+func (l *IFederateLogic) pushPeer(ctx context.Context, addr string, conn *websocket.Conn) {
 	// 创建带缓冲的发送通道
 	peer := &Peer{
 		Addr: addr,
@@ -48,6 +70,17 @@ func (l *IFederateLogic) AddPeer(ctx context.Context, addr string, conn *websock
 	go peer.WritePump(ctx)
 
 	g.Log(consts.FederateLogger).Infof(ctx, "New peer connected: %s", addr)
+}
+
+// AddPeer 添加新的级联对端
+func (l *IFederateLogic) AddPeer(ctx context.Context, addr string, conn *websocket.Conn) error {
+
+	err := l.checkAddPeer(ctx, addr)
+	if err != nil {
+		return err
+	}
+
+	l.pushPeer(ctx, addr, conn)
 	return nil
 }
 
@@ -158,27 +191,42 @@ func (l *IFederateLogic) GetAllPeerAddrs() []string {
 	return peers
 }
 
-func (l *IFederateLogic) connectToPeer(ctx context.Context, hostAddrDTO *dto.HostAddress) (*Peer, error) {
+func (l *IFederateLogic) connectToPeer(ctx context.Context, hostAddrDTO *dto.HostAddress) (*websocket.Conn, error) {
 	// 实现连接逻辑，例如 WebSocket 连接
 	url := fmt.Sprintf("ws://%s:%d%s", hostAddrDTO.IP, hostAddrDTO.Port, consts.FEDERATEROOT)
 	g.Log(consts.FederateLogger).Infof(ctx, "Start connecting: %s", url)
 	conn, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
 	if err != nil {
+		g.Log(consts.FederateLogger).Error(ctx, err)
 		return nil, err
 	}
-	return &Peer{Conn: conn, Addr: hostAddrDTO.IP}, nil
+	return conn, nil
 }
 
+// RestAddPeer 从前端页面手动添加federate peer
+func (l *IFederateLogic) RestAddPeer(ctx context.Context, hostAddrDTO *dto.HostAddress) error {
+	err := l.checkAddPeer(ctx, hostAddrDTO.IP)
+	if err != nil {
+		return err
+	}
+
+	conn, err := l.connectToPeer(ctx, hostAddrDTO)
+	if err != nil {
+		return err
+	}
+	l.pushPeer(ctx, hostAddrDTO.IP, conn)
+	return nil
+}
+
+// ConnectToPeers 配置文件中存在 federateRemoteAddress 配置时，需要添加federate peer
 func (l *IFederateLogic) ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto.HostAddress) {
 	for _, addrDTO := range hostAddrsDTO {
 		go func(hostAddrDTO *dto.HostAddress) {
 			asyncCtx := context.WithoutCancel(ctx)
 			count := 0
 			for {
-				peer, err := l.connectToPeer(asyncCtx, hostAddrDTO)
+				err := l.RestAddPeer(asyncCtx, hostAddrDTO)
 				if err != nil {
-					//g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to connect to peer %s: %+v", hostAddrDTO.IP, err)
-					g.Log(consts.FederateLogger).Error(asyncCtx, err)
 					count++
 					if count >= consts.FederateRetryConnectCount {
 						break
@@ -186,10 +234,6 @@ func (l *IFederateLogic) ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto
 					time.Sleep(consts.FederateRetryConnectinterval) // 重试间隔
 					continue
 				}
-				l.mu.Lock()
-				l.peers[hostAddrDTO.IP] = peer
-				l.mu.Unlock()
-				g.Log(consts.FederateLogger).Infof(asyncCtx, "Successfully connected to peer %s", hostAddrDTO.IP)
 				break
 			}
 		}(addrDTO)

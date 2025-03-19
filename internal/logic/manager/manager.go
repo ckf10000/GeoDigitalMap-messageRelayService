@@ -30,6 +30,7 @@ type IFederateLogic interface {
 	ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto.HostAddress)
 	AddPeer(ctx context.Context, addr string, conn *websocket.Conn) error
 	HandleMessages(ctx context.Context, conn *websocket.Conn)
+	RestAddPeer(ctx context.Context, hostAddrDTO *dto.HostAddress) error
 }
 
 // globalClientLogic 全局单例，便于其它模块调用管理在线客户端

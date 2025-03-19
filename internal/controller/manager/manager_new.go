@@ -10,10 +10,23 @@
 package manager
 
 import (
+	"GeoDigitalMap-messageRelayService/api/manager"
 	"GeoDigitalMap-messageRelayService/internal/logic/client"
 	"GeoDigitalMap-messageRelayService/internal/logic/federate"
-	"GeoDigitalMap-messageRelayService/internal/logic/manager"
+	manageLogic "GeoDigitalMap-messageRelayService/internal/logic/manager"
 )
+
+type ControllerV1 struct {
+	clientLogic   manageLogic.IClientLogic
+	federateLogic manageLogic.IFederateLogic
+}
+
+func NewV1() manager.IManagerV1 {
+	return &ControllerV1{
+		clientLogic:   manageLogic.GetClientLogic(),
+		federateLogic: manageLogic.GetFederatePeerLogic(),
+	}
+}
 
 type ControllerManagerClientV1 struct {
 	clientLogic *client.IClientLogic
@@ -25,7 +38,7 @@ type ControllerManagerFederateV1 struct {
 
 func NewControllerManagerClientV1() *ControllerManagerClientV1 {
 	clientLogic := client.NewIClientLogic()
-	manager.SetClientLogic(clientLogic)
+	manageLogic.SetClientLogic(clientLogic)
 	return &ControllerManagerClientV1{
 		clientLogic: clientLogic,
 	}
@@ -33,7 +46,7 @@ func NewControllerManagerClientV1() *ControllerManagerClientV1 {
 
 func NewControllerManagerFederateV1() *ControllerManagerFederateV1 {
 	federateLogic := federate.NewIFederateLogic()
-	manager.SetFederatePeerLogic(federateLogic)
+	manageLogic.SetFederatePeerLogic(federateLogic)
 	return &ControllerManagerFederateV1{
 		federateLogic: federateLogic,
 	}

@@ -40,7 +40,6 @@ func CreateFederationServer(ctx context.Context) *ghttp.Server {
 		}
 		err = federateCtl.AddPeer(subCtx, r.RemoteAddr, ws)
 		if err != nil {
-			g.Log(consts.FederateLogger).Errorf(subCtx, "Adding peer failed, %+v", err)
 			return
 		}
 		// 处理级联连接的消息和心跳处理

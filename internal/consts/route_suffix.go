@@ -16,4 +16,5 @@ const (
 	APIROOT           = "/api"
 	V1                = "/v1"
 	MAINTENANCEMODULE = "/maintenance"
+	MANAGERMODULE     = "/manager"
 )

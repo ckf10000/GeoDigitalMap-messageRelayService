@@ -4,6 +4,7 @@ package cmd
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
 	"GeoDigitalMap-messageRelayService/internal/controller/maintenance"
+	"GeoDigitalMap-messageRelayService/internal/controller/manager"
 	"GeoDigitalMap-messageRelayService/internal/middleware/persistence"
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
@@ -44,6 +45,7 @@ func registerRestV1Routes(group *ghttp.RouterGroup) {
 		// TODO 添加自定义的中间件钩子
 
 		// 注册子模块的路由
+		registerManagerRoutes(v1)
 		registerMaintenanceRoutes(v1)
 	})
 }
@@ -52,5 +54,12 @@ func registerRestV1Routes(group *ghttp.RouterGroup) {
 func registerMaintenanceRoutes(group *ghttp.RouterGroup) {
 	group.Group(consts.MAINTENANCEMODULE, func(group *ghttp.RouterGroup) {
 		group.Bind(maintenance.NewV1())
+	})
+}
+
+// registerManagerRoutes 系统管理模块路由的封装
+func registerManagerRoutes(group *ghttp.RouterGroup) {
+	group.Group(consts.MANAGERMODULE, func(group *ghttp.RouterGroup) {
+		group.Bind(manager.NewV1())
 	})
 }
