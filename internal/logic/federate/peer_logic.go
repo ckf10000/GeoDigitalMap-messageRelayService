@@ -23,11 +23,9 @@ func (p *Peer) WritePump(ctx context.Context) {
 	ticker := time.NewTicker(consts.ClientHeartbeatDuration)
 	defer func() {
 		ticker.Stop()
-		err := p.Conn.Close()
-		if err != nil {
-			g.Log(consts.FederateLogger).Error(asyncCtx, err)
-			return
-		} // 关闭连接
+		// 关闭连接
+		_ = p.Conn.Close()
+		return
 	}()
 
 	for {

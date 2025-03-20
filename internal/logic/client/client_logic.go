@@ -28,15 +28,12 @@ import (
 
 // WritePump 方法负责从 Send 通道中读取消息并发送给客户端，带有心跳检测
 func (c *Client) WritePump(ctx context.Context) {
-	asyncCtx := context.WithoutCancel(ctx)
 	ticker := time.NewTicker(consts.ClientHeartbeatDuration)
 	defer func() {
 		ticker.Stop()
-		err := c.Conn.Close()
-		if err != nil {
-			g.Log(consts.SocketLogger).Error(asyncCtx, err)
-			return
-		} // 关闭连接
+		// 关闭连接
+		_ = c.Conn.Close()
+		return
 	}()
 
 	for {
@@ -74,6 +71,19 @@ func (l *IClientLogic) AddClient(ctx context.Context, clientID string, conn *web
 		g.Log(consts.SocketLogger).Error(ctx, str)
 		return gerror.New(str)
 	}
+
+	// 判断用户是否存在通过其他客户端接入进来的连接
+	localClient, exists := l.userClients[userID]
+	if exists {
+		// 关闭 WebSocket 连接
+		_ = localClient.Conn.Close()
+		// 关闭通道
+		close(localClient.Send)
+		delete(l.clients, localClient.ClientID)
+		delete(l.userClients, userID)
+		g.Log(consts.SocketLogger).Infof(ctx, "userId <%s> client disconnected: %s", userID, clientID)
+	}
+
 	// 创建带缓冲的发送通道
 	client := &Client{
 		UserID:   userID,
@@ -84,11 +94,12 @@ func (l *IClientLogic) AddClient(ctx context.Context, clientID string, conn *web
 	}
 
 	l.clients[clientID] = client
+	l.userClients[userID] = client
 
 	// 启动一个 goroutine 处理消息发送
 	go client.WritePump(ctx)
 
-	g.Log(consts.SocketLogger).Infof(ctx, "New client connected: %s", clientID)
+	g.Log(consts.SocketLogger).Infof(ctx, "userId <%s> new client connected: %s", userID, clientID)
 	return nil
 }
 
@@ -98,9 +109,7 @@ func (l *IClientLogic) HandleMessages(ctx context.Context, conn *websocket.Conn)
 	clientID := conn.RemoteAddr().String()
 
 	// 客户端断开时移除
-	defer func() {
-		l.RemoveClient(asyncCtx, clientID)
-	}()
+	defer l.RemoveClient(asyncCtx, clientID)
 
 	for {
 		_, message, err := conn.ReadMessage()
@@ -129,6 +138,9 @@ func (l *IClientLogic) HandleMessages(ctx context.Context, conn *websocket.Conn)
 			g.Log(consts.SocketLogger).Errorf(ctx, "Failed to parse message: %+v", err)
 			continue
 		}
+		if len(msg.Sender) == 0 {
+			msg.Sender = l.clients[clientID].UserID
+		}
 
 		// 服务端生成 UUID
 		msg.UID = uuid.New().String()
@@ -149,8 +161,11 @@ func (l *IClientLogic) RemoveClient(ctx context.Context, clientID string) {
 	defer l.mu.Unlock()
 
 	if client, exists := l.clients[clientID]; exists {
+		// 关闭 WebSocket 连接
+		_ = client.Conn.Close()
 		close(client.Send) // 关闭通道
 		delete(l.clients, clientID)
+		delete(l.userClients, client.UserID)
 		g.Log(consts.SocketLogger).Infof(ctx, "Client disconnected: %s", clientID)
 	}
 }
@@ -195,7 +210,7 @@ func (l *IClientLogic) RouteMessage(ctx context.Context, msg *dto.MessageIutputD
 // SendP2PMessage 发送私聊
 func (l *IClientLogic) SendP2PMessage(ctx context.Context, receiver string, message []byte) error {
 	l.mu.RLock()
-	receiverClient, exists := l.clients[receiver]
+	client, exists := l.userClients[receiver]
 	l.mu.RUnlock()
 
 	if !exists {
@@ -206,7 +221,7 @@ func (l *IClientLogic) SendP2PMessage(ctx context.Context, receiver string, mess
 
 	// 将消息写入客户端的 Send 通道
 	select {
-	case receiverClient.Send <- message:
+	case client.Send <- message:
 		// 消息成功写入通道
 	default:
 		// 通道已满，丢弃消息或记录日志

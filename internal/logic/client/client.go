@@ -26,13 +26,15 @@ type Client struct {
 
 // IClientLogic 管理所有客户端连接及消息路由
 type IClientLogic struct {
-	clients map[string]*Client // 客户端对象字典
-	mu      sync.RWMutex       // 读写锁
+	clients     map[string]*Client // 以 clientID 为 key 的客户端对象字典
+	userClients map[string]*Client // 以 userID 为 key 的客户端对象字典，避免消息路由时，每次都遍历 clients
+	mu          sync.RWMutex       // 读写锁
 }
 
 // NewIClientLogic 构造新的 ClientLogic 实例
 func NewIClientLogic() *IClientLogic {
 	return &IClientLogic{
-		clients: make(map[string]*Client),
+		clients:     make(map[string]*Client),
+		userClients: make(map[string]*Client),
 	}
 }

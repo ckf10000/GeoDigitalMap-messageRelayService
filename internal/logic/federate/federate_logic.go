@@ -45,16 +45,6 @@ func (l *IFederateLogic) checkAddPeer(ctx context.Context, addr string) error {
 		return gerror.New(str)
 	}
 
-	// 再加写锁修改数据
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	// 再次检查，防止并发情况下同一地址重复添加
-	if _, exists = l.peers[addr]; exists {
-		str := fmt.Sprintf("Peer <%s> already exists", addr)
-		g.Log(consts.FederateLogger).Error(ctx, str)
-		return gerror.New(str)
-	}
 	return nil
 }
 
@@ -83,6 +73,17 @@ func (l *IFederateLogic) AddPeer(ctx context.Context, addr string, conn *websock
 		return err
 	}
 
+	// 再加写锁修改数据
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// 再次检查，防止并发情况下同一地址重复添加
+	if _, exists := l.peers[addr]; exists {
+		str := fmt.Sprintf("Peer <%s> already exists", addr)
+		g.Log(consts.FederateLogger).Error(ctx, str)
+		return gerror.New(str)
+	}
+
 	l.pushPeer(ctx, addr, conn)
 	return nil
 }
@@ -93,9 +94,7 @@ func (l *IFederateLogic) HandleMessages(ctx context.Context, conn *websocket.Con
 	addr := conn.RemoteAddr().String()
 
 	// 客户端断开时移除
-	defer func() {
-		l.RemovePeer(asyncCtx, addr)
-	}()
+	defer l.RemovePeer(asyncCtx, addr)
 
 	for {
 		_, message, err := conn.ReadMessage()
@@ -204,7 +203,10 @@ func (l *IFederateLogic) RemovePeer(ctx context.Context, addr string) {
 	defer l.mu.Unlock()
 
 	if peer, exists := l.peers[addr]; exists {
-		close(peer.Send) // 关闭通道
+		// 关闭 WebSocket 连接
+		_ = peer.Conn.Close()
+		// 关闭通道
+		close(peer.Send)
 		delete(l.peers, addr)
 		g.Log(consts.FederateLogger).Warningf(ctx, "Peer disconnected: %s", addr)
 	}
@@ -239,6 +241,17 @@ func (l *IFederateLogic) RestAddPeer(ctx context.Context, hostAddrDTO *dto.HostA
 	err := l.checkAddPeer(ctx, hostAddrDTO.IP)
 	if err != nil {
 		return err
+	}
+
+	// 再加写锁修改数据
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// 再次检查，防止并发情况下同一地址重复添加
+	if _, exists := l.peers[hostAddrDTO.IP]; exists {
+		str := fmt.Sprintf("Peer <%s> already exists", hostAddrDTO.IP)
+		g.Log(consts.FederateLogger).Error(ctx, str)
+		return gerror.New(str)
 	}
 
 	conn, err := l.connectToPeer(ctx, hostAddrDTO)
