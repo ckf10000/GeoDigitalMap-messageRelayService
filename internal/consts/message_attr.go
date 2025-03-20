@@ -17,11 +17,3 @@ const (
 	PointToGroup MessageType = "P2G"
 	Broadcast    MessageType = "BROADCAST"
 )
-
-type MessageStatus int
-
-const (
-	StatusPending   MessageStatus = iota // 发送中
-	StatusDelivered                      // 已传达
-	StatusFailed                         // 已失败
-)

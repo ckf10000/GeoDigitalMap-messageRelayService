@@ -14,15 +14,28 @@ import (
 	"time"
 )
 
+type MessageIutputDTO struct {
+	MessageID   string             `json:"messageID"`   // 消息的messageID
+	UID         string             `json:"uid"`         // 消息在服务端分配的uid
+	Sender      string             `json:"sender"`      // 消息的发送者
+	Receivers   []string           `json:"receivers"`   // 消息的接收者，使用PostgreSQL数组类型
+	Content     interface{}        `json:"content"`     // 消息的内容
+	CreatedAt   time.Time          `json:"createdAt"`   // 消息的创建时间，time.Time 默认序列化支持的是RFC3339格式：yyyy-MM-ddTHH:mm:ssZ
+	MessageType consts.MessageType `json:"messageType"` // 消息类型
+}
+
+type RelayMessageIutputDTO struct {
+	MessageIutput  *MessageIutputDTO
+	FederateSource []string `json:"federateSource"` // 标记消息来源
+}
+
 type MessageOutputDTO struct {
-	ID          string               `json:"id" orm:"id,primary"`
-	Sender      string               `json:"sender" orm:"sender"`
-	Receivers   []string             `json:"receivers" orm:"receivers"` // 使用PostgreSQL数组类型
-	Content     []byte               `json:"content" orm:"content"`
-	Status      consts.MessageStatus `json:"status" orm:"status"`
-	CreatedAt   time.Time            `json:"created_at" orm:"created_at"`
-	RetryCount  int                  `json:"retry_count" orm:"retry_count"`
-	MessageType consts.MessageType   `json:"message_type" orm:"message_type"`
+	MessageID   string             `json:"messageID"`   // 消息的messageID
+	Sender      string             `json:"sender"`      // 消息的发送者
+	Receivers   []string           `json:"receivers"`   // 消息的接收者，使用PostgreSQL数组类型
+	Content     interface{}        `json:"content"`     // 消息的内容
+	CreatedAt   string             `json:"createdAt"`   // 消息的创建时间, messageOutputDTO.CreatedAt.Format(time.RFC3339)
+	MessageType consts.MessageType `json:"messageType"` // 消息类型
 }
 
 type BroadcastMessageOutputDTO struct {

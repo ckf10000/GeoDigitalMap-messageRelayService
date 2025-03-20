@@ -21,6 +21,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"time"
 )
@@ -114,11 +115,14 @@ func (l *IClientLogic) HandleMessages(ctx context.Context, conn *websocket.Conn)
 		//g.Log(consts.SocketLogger).Infof(asyncCtx, "received message: %+v", message)
 
 		// 处理消息逻辑
-		var msg *dto.MessageOutputDTO
+		var msg *dto.MessageIutputDTO
 		if err = json.Unmarshal(message, &msg); err != nil {
 			g.Log(consts.SocketLogger).Errorf(ctx, "Failed to parse message: %+v", err)
 			continue
 		}
+
+		// 服务端生成 UUID
+		msg.UID = uuid.New().String()
 
 		infoData, _ := gjson.Marshal(msg)
 		//infoData, _ := gjson.MarshalIndent(msg, "", "\t")
@@ -143,8 +147,16 @@ func (l *IClientLogic) RemoveClient(ctx context.Context, clientID string) {
 }
 
 // RouteMessage 根据消息类型进行路由分发
-func (l *IClientLogic) RouteMessage(ctx context.Context, msg *dto.MessageOutputDTO) {
-	data, err := json.Marshal(msg)
+func (l *IClientLogic) RouteMessage(ctx context.Context, msg *dto.MessageIutputDTO) {
+	messageOutputDTO := &dto.MessageOutputDTO{
+		MessageID:   msg.MessageID,
+		Sender:      msg.Sender,
+		Receivers:   msg.Receivers,
+		Content:     msg.Content,
+		CreatedAt:   msg.CreatedAt.Format(time.RFC3339),
+		MessageType: msg.MessageType,
+	}
+	data, err := json.Marshal(messageOutputDTO)
 	if err != nil {
 		g.Log(consts.SocketLogger).Error(ctx, err)
 		return
@@ -159,10 +171,10 @@ func (l *IClientLogic) RouteMessage(ctx context.Context, msg *dto.MessageOutputD
 			// 将消息广播给所有 federate 的 peer
 			localIP := utils.GetFederateLocalIP(ctx)
 			if len(localIP) > 0 {
-				manager.GetFederatePeerLogic().SendBroadcastMessage(ctx, data, []string{localIP})
+				manager.GetFederatePeerLogic().SendRelayMessage(ctx, data, []string{localIP})
 			}
 		}
-
+	// TODO 目前仅支持广播消息的中继
 	default:
 		g.Log(consts.SocketLogger).Errorf(ctx, "Unsupported message types: %s", msg.MessageType)
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"time"
 )
@@ -117,11 +118,14 @@ func (l *IFederateLogic) HandleMessages(ctx context.Context, conn *websocket.Con
 		//g.Log(consts.FederateLogger).Infof(asyncCtx, "received message: %+v", message)
 
 		// 处理消息逻辑
-		var msg *dto.BroadcastMessageOutputDTO
+		var msg *dto.RelayMessageIutputDTO
 		if err = json.Unmarshal(message, &msg); err != nil {
-			g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to parse federate broadcast message: %+v", err)
+			g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to parse federate relay message: %+v", err)
 			continue
 		}
+
+		// 服务端生成 UUID
+		msg.MessageIutput.MessageID = uuid.New().String()
 
 		infoData, _ := gjson.Marshal(msg)
 		//infoData, _ := gjson.MarshalIndent(msg, "", "\t")
@@ -132,31 +136,49 @@ func (l *IFederateLogic) HandleMessages(ctx context.Context, conn *websocket.Con
 }
 
 // RouteMessage 将消息发送给自己的所有客户端，以及广播给federate peer
-func (l *IFederateLogic) RouteMessage(ctx context.Context, message *dto.BroadcastMessageOutputDTO) {
-	localIP := utils.GetFederateLocalIP(ctx)
-	// 将Federate 连接接收到的消息发送给所有客户端
-	if len(manager.GetAllClientIDs()) > 0 {
-		data, err := json.Marshal(message.MessageOutput)
-		if err != nil {
-			g.Log(consts.FederateLogger).Error(ctx, err)
-			return
+func (l *IFederateLogic) RouteMessage(ctx context.Context, message *dto.RelayMessageIutputDTO) {
+
+	messageOutputDTO := &dto.MessageOutputDTO{
+		MessageID:   message.MessageIutput.MessageID,
+		Sender:      message.MessageIutput.Sender,
+		Receivers:   message.MessageIutput.Receivers,
+		Content:     message.MessageIutput.Content,
+		CreatedAt:   message.MessageIutput.CreatedAt.Format(time.RFC3339),
+		MessageType: message.MessageIutput.MessageType,
+	}
+	switch message.MessageIutput.MessageType {
+	case consts.Broadcast:
+		// 将Federate 连接接收到的消息发送给所有客户端
+		if len(manager.GetAllClientIDs()) > 0 {
+			data, err := json.Marshal(messageOutputDTO)
+			if err != nil {
+				g.Log(consts.FederateLogger).Error(ctx, err)
+				return
+			}
+			manager.GetClientLogic().SendBroadcastMessage(ctx, data)
 		}
-		manager.GetClientLogic().SendBroadcastMessage(ctx, data)
+	}
+	// TODO 目前中继消息仅支持广播消息的处理
+
+	// 消息继续向其他的federate peer传递
+	localIP := utils.GetFederateLocalIP(ctx)
+	federateSource := append(message.FederateSource, localIP)
+	broadcastMessageOutputDTO := &dto.BroadcastMessageOutputDTO{
+		MessageOutput:  messageOutputDTO,
+		FederateSource: federateSource,
 	}
 
-	message.FederateSource = append(message.FederateSource, localIP)
-
-	data, err := json.Marshal(message)
+	data, err := json.Marshal(broadcastMessageOutputDTO)
 	if err != nil {
 		g.Log(consts.FederateLogger).Error(ctx, err)
 		return
 	}
 
-	l.SendBroadcastMessage(ctx, data, message.FederateSource)
+	l.SendRelayMessage(ctx, data, message.FederateSource)
 }
 
-// SendBroadcastMessage 向所有级联对端发送消息，采用非阻塞写入
-func (l *IFederateLogic) SendBroadcastMessage(ctx context.Context, message []byte, federateSource []string) {
+// SendRelayMessage 向所有级联对端发送消息，采用非阻塞写入
+func (l *IFederateLogic) SendRelayMessage(ctx context.Context, message []byte, federateSource []string) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
