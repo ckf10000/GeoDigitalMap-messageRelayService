@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gorilla/websocket"
@@ -107,17 +108,24 @@ func (l *IFederateLogic) HandleMessages(ctx context.Context, conn *websocket.Con
 					g.Log(consts.FederateLogger).Errorf(asyncCtx, "client closed the connection with unexpected code: %+v", closeErr.Code)
 				}
 			} else {
-				g.Log(consts.FederateLogger).Infof(asyncCtx, "received handle: %s", message)
+				g.Log(consts.FederateLogger).Error(asyncCtx, err)
 			}
 			break
 		}
 
+		// 此时读出来的数据，还是[]byte类型数据
+		//g.Log(consts.FederateLogger).Infof(asyncCtx, "received message: %+v", message)
+
 		// 处理消息逻辑
 		var msg *dto.BroadcastMessageOutputDTO
-		if err = json.Unmarshal(message, msg); err != nil {
+		if err = json.Unmarshal(message, &msg); err != nil {
 			g.Log(consts.FederateLogger).Errorf(asyncCtx, "Failed to parse federate broadcast message: %+v", err)
 			continue
 		}
+
+		infoData, _ := gjson.Marshal(msg)
+		//infoData, _ := gjson.MarshalIndent(msg, "", "\t")
+		g.Log(consts.SocketLogger).Infof(asyncCtx, "received message: %s", string(infoData))
 
 		l.RouteMessage(asyncCtx, msg)
 	}

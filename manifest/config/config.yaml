@@ -39,9 +39,7 @@ server:
     logStdout: true                            # 日志是否输出到终端。默认为true
     errorStack: true                           # 当Server捕获到异常时是否记录堆栈信息到日志中。默认为true
     localIP: "192.168.200.1"                   # 级联的本端ip
-    federateRemoteAddress:                     # 级联的远端ip列表
-      - "192.168.200.200:28090"
-      - "192.168.200.201:28090"
+    federateRemoteAddress: []                  # 级联的远端ip列表
 
 
 # https://goframe.org/docs/core/gdb-config-file

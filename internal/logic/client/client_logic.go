@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gorilla/websocket"
@@ -109,14 +110,19 @@ func (l *IClientLogic) HandleMessages(ctx context.Context, conn *websocket.Conn)
 			break
 		}
 
-		g.Log(consts.SocketLogger).Infof(asyncCtx, "received message: %+v", message)
+		// 此时读出来的数据，还是[]byte类型数据
+		//g.Log(consts.SocketLogger).Infof(asyncCtx, "received message: %+v", message)
 
 		// 处理消息逻辑
 		var msg *dto.MessageOutputDTO
-		if err = json.Unmarshal(message, msg); err != nil {
+		if err = json.Unmarshal(message, &msg); err != nil {
 			g.Log(consts.SocketLogger).Errorf(ctx, "Failed to parse message: %+v", err)
 			continue
 		}
+
+		infoData, _ := gjson.Marshal(msg)
+		//infoData, _ := gjson.MarshalIndent(msg, "", "\t")
+		g.Log(consts.SocketLogger).Infof(asyncCtx, "received message: %s", string(infoData))
 
 		l.RouteMessage(ctx, msg)
 		// TODO 消息持久化
