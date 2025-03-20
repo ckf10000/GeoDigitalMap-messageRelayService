@@ -61,9 +61,10 @@ func (l *IFederateLogic) checkAddPeer(ctx context.Context, addr string) error {
 func (l *IFederateLogic) pushPeer(ctx context.Context, addr string, conn *websocket.Conn) {
 	// 创建带缓冲的发送通道
 	peer := &Peer{
-		Addr: addr,
-		Conn: conn,
-		Send: make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
+		Addr:   addr,
+		Conn:   conn,
+		Send:   make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
+		JoinAt: time.Now(),                                   // 记录当前时间
 	}
 
 	l.peers[addr] = peer

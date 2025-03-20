@@ -12,6 +12,7 @@ package client
 import (
 	"github.com/gorilla/websocket"
 	"sync"
+	"time"
 )
 
 // Client 表示一个客户端连接
@@ -19,6 +20,7 @@ type Client struct {
 	ClientID string          // 客户端唯一标识
 	Conn     *websocket.Conn // WebSocket 连接
 	Send     chan []byte     // 带缓冲的发送通道
+	JoinAt   time.Time       // 客户端接入时间`
 }
 
 // IClientLogic 管理所有客户端连接及消息路由

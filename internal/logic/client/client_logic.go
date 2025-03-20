@@ -72,6 +72,7 @@ func (l *IClientLogic) AddClient(ctx context.Context, clientID string, conn *web
 		ClientID: clientID,
 		Conn:     conn,
 		Send:     make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
+		JoinAt:   time.Now(),                                   // 记录当前时间
 	}
 
 	l.clients[clientID] = client
