@@ -67,8 +67,16 @@ func (l *IClientLogic) AddClient(ctx context.Context, clientID string, conn *web
 		return gerror.New(str)
 	}
 
+	// 获取用户 ID
+	userID, ok := ctx.Value(consts.ContextUserIdKey).(string)
+	if !ok {
+		str := fmt.Sprint("failed to retrieve user ID from context")
+		g.Log(consts.SocketLogger).Error(ctx, str)
+		return gerror.New(str)
+	}
 	// 创建带缓冲的发送通道
 	client := &Client{
+		UserID:   userID,
 		ClientID: clientID,
 		Conn:     conn,
 		Send:     make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
@@ -236,20 +244,30 @@ func (l *IClientLogic) SendBroadcastMessage(ctx context.Context, message []byte)
 }
 
 // GetAllClients 返回所有在线客户端的 map，便于管理监控
-func (l *IClientLogic) GetAllClients() map[string]*Client {
+func (l *IClientLogic) GetAllClients() []*dto.OnlineClientOutput {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	return l.clients
+
+	var allClients []*dto.OnlineClientOutput
+	for clientID, client := range l.clients {
+		allClients = append(allClients, &dto.OnlineClientOutput{
+			UserID:   client.UserID,
+			ClientID: clientID,
+			Username: "",
+			JoinAt:   client.JoinAt.Format(time.RFC3339),
+		})
+	}
+	return allClients
 }
 
 // GetAllClientIDs 返回所有在线客户端的 ID 列表
-func (l *IClientLogic) GetAllClientIDs() []string {
+func (l *IClientLogic) GetAllClientIDs() []*string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
-	clients := make([]string, 0, len(l.clients))
+	clients := make([]*string, 0, len(l.clients))
 	for id := range l.clients {
-		clients = append(clients, id)
+		clients = append(clients, &id)
 	}
 	return clients
 }

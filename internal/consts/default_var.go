@@ -19,4 +19,7 @@ const (
 	ServiceInstancePoolCapacity  = 16               // 创建服务实例池的最大容量
 	FederateRetryConnectCount    = 3                // 连接federate peer 失败重试的次数
 	FederateRetryConnectinterval = 10 * time.Second // 连接federate peer 失败重试的间隔
+	ContextUserIdKey             = "userId"         // 上下文变量中的userId的key
+	ContextTokenKey              = "token"          // 上下文变量中的token的key
+	ContextWSConnKey             = "wsConn"         // 上下文变量中的websocket连接的key
 )

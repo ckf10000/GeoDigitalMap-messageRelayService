@@ -17,7 +17,8 @@ import (
 
 // IClientLogic 接口定义
 type IClientLogic interface {
-	GetAllClientIDs() []string
+	GetAllClientIDs() []*string
+	GetAllClients() []*dto.OnlineClientOutput
 	SendBroadcastMessage(ctx context.Context, message []byte)
 	AddClient(ctx context.Context, id string, conn *websocket.Conn) error
 	HandleMessages(ctx context.Context, conn *websocket.Conn)

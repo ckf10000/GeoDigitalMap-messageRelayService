@@ -31,8 +31,8 @@ func ClientAuth(r *ghttp.Request) (string, string, error) {
 		return "", "", gerror.New(err)
 	}
 	// TODO 可扩展添加JWT验证逻辑，目前假设都有效
-	r.SetCtxVar("userId", userId.String())
-	r.SetCtxVar("token", token.String())
+	r.SetCtxVar(consts.ContextUserIdKey, userId.String())
+	r.SetCtxVar(consts.ContextTokenKey, token.String())
 	return userId.String(), token.String(), nil
 }
 

@@ -1,21 +1,17 @@
-// Package manager
+// Package dto
 /*********************************************************************************************************************
 * ProjectName:  GeoDigitalMap-messageRelayService
-* FileName:     manager.go
+* FileName:     client.go
 * Description:  TODO
 * Author:       zhouhanlin
-* CreateDate:   2025-03-19 23:34:29
+* CreateDate:   2025-03-20 17:17:18
 * Copyright ©2011-2025. Hunan xyz Company limited. All rights reserved.
 * *********************************************************************************************************************/
-package manager
+package dto
 
-import (
-	"context"
-
-	"GeoDigitalMap-messageRelayService/api/manager/v1"
-)
-
-type IManagerV1 interface {
-	AddPeer(ctx context.Context, req *v1.AddPeerReq) (res *v1.AddPeerRes, err error)
-	GetOnlineClients(ctx context.Context, req *v1.GetOnlineClientsReq) (res *v1.GetOnlineClientsRes, err error)
+type OnlineClientOutput struct {
+	UserID   string `json:"userId"`   // 客户端用户唯一标识
+	ClientID string `json:"clientID"` // 客户端唯一标识
+	Username string `json:"username"` // 用户名称
+	JoinAt   string `json:"joinAt"`   // 客户端接入时间`
 }

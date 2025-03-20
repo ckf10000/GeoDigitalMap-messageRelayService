@@ -46,8 +46,8 @@ func CreateFederationServer(ctx context.Context) *ghttp.Server {
 			federateCtl := federate.NewV1()
 
 			// 从上下文获取 WebSocket 连接
-			wsValue := r.GetCtxVar("ws_conn").Interface() // 先转换为 interface{}
-			ws, ok := wsValue.(*websocket.Conn)           // 再进行类型断言
+			wsValue := r.GetCtxVar(consts.ContextWSConnKey).Interface() // 先转换为 interface{}
+			ws, ok := wsValue.(*websocket.Conn)                         // 再进行类型断言
 			if !ok || ws == nil {
 				str := fmt.Sprint("Failed to get WebSocket connection from context")
 				g.Log(consts.SocketLogger).Error(subCtx, str)

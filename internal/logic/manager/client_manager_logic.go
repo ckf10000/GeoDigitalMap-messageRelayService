@@ -9,6 +9,8 @@
 * *********************************************************************************************************************/
 package manager
 
+import "GeoDigitalMap-messageRelayService/internal/model/dto"
+
 // SetClientLogic 用于设置 Client 逻辑
 func SetClientLogic(logic IClientLogic) {
 	globalClientLogic = logic
@@ -19,7 +21,12 @@ func GetClientLogic() IClientLogic {
 	return globalClientLogic
 }
 
-// GetAllClientIDs 是辅助接口，用于管理接口返回在线客户端列表
-func GetAllClientIDs() []string {
+// GetAllClientIDs 是辅助接口，用于管理接口返回在线客户端ID列表
+func GetAllClientIDs() []*string {
 	return globalClientLogic.GetAllClientIDs()
+}
+
+// GetAllClients 是辅助接口，用于管理接口返回在线客户端列表
+func GetAllClients() []*dto.OnlineClientOutput {
+	return globalClientLogic.GetAllClients()
 }

@@ -48,7 +48,7 @@ func WebSocketUpgradeMiddleware(r *ghttp.Request) {
 	}
 
 	// 将 WebSocket 连接存入上下文，供后续处理
-	r.SetCtxVar("ws_conn", ws)
+	r.SetCtxVar(consts.ContextWSConnKey, ws)
 
 	// 继续执行后续处理
 	r.Middleware.Next()
