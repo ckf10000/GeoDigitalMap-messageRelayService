@@ -12,37 +12,55 @@ package cmd
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
 	"GeoDigitalMap-messageRelayService/internal/controller/client"
+	"GeoDigitalMap-messageRelayService/internal/middleware/auth"
 	"GeoDigitalMap-messageRelayService/internal/middleware/forward"
+	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gorilla/websocket"
 )
 
 func CreateTCPSocketServer() *ghttp.Server {
 	ser := g.Server(consts.TCPSocketService)
 	ser.SetLogger(g.Log(consts.SocketLogger))
 
-	// Bind WebSocket handler to / endpoint
-	ser.BindHandler(consts.WSSROOT, func(r *ghttp.Request) {
-		subCtx := r.Context()
-		clientCtl := client.NewV1()
-		ws, err := forward.WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
-		if err != nil {
-			g.Log(consts.SocketLogger).Errorf(subCtx, "WS upgrade failed: %+v", err)
-			r.Response.Write(err.Error())
-			return
-		}
+	// 主路由定义
+	ser.Group(consts.WSROOT, func(group *ghttp.RouterGroup) {
+		group.Middleware(ghttp.MiddlewareHandlerResponse)
+		// 添加认证中间件
+		group.Middleware(auth.ClientAuthMiddleware)
+		// 添加 WebSocket 连接升级中间件
+		group.Middleware(forward.WebSocketUpgradeMiddleware)
 
-		// 注册新的客户端连接，使用 RemoteAddr 作为示例标识（实际项目中建议使用唯一ID）
-		err = clientCtl.AddClient(subCtx, r.RemoteAddr, ws)
-		if err != nil {
-			g.Log(consts.SocketLogger).Errorf(subCtx, "Remote host connection failed: %+v", err)
-			r.Response.Write(err.Error())
-			return
-		}
+		// WebSocket 连接处理
+		group.GET(consts.WSROOT, func(r *ghttp.Request) {
+			subCtx := r.Context()
+			clientCtl := client.NewV1()
 
-		// 异步启动消息处理逻辑
-		go clientCtl.HandleMessages(subCtx, ws)
+			// 从上下文获取 WebSocket 连接
+			wsValue := r.GetCtxVar("ws_conn").Interface() // 先转换为 interface{}
+			ws, ok := wsValue.(*websocket.Conn)           // 再进行类型断言
+			if !ok || ws == nil {
+				str := fmt.Sprint("Failed to get WebSocket connection from context")
+				g.Log(consts.SocketLogger).Error(subCtx, str)
+				r.Response.WriteExit(str)
+				return
+			}
+
+			// 注册新的客户端连接
+			err := clientCtl.AddClient(subCtx, r.RemoteAddr, ws)
+			if err != nil {
+				str := fmt.Sprintf("Remote host connection failed: %+v", err)
+				g.Log(consts.SocketLogger).Error(subCtx, str)
+				r.Response.WriteExit(str)
+				return
+			}
+
+			// 异步启动消息处理逻辑
+			go clientCtl.HandleMessages(subCtx, ws)
+		})
 	})
+
 	//ser.SetGraceful(true)
 	//ser.EnableAdmin()
 	// Configure static file serving

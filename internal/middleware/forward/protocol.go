@@ -11,7 +11,9 @@ package forward
 
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
+	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gorilla/websocket"
 	"net/http"
 )
@@ -28,4 +30,26 @@ var WSUpGrader = websocket.Upgrader{
 	Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
 		// Implement error handling logic here
 	},
+}
+
+func WebSocketUpgradeMiddleware(r *ghttp.Request) {
+	ctx := r.Context()
+
+	// 执行 WS 升级
+	ws, err := WSUpGrader.Upgrade(r.Response.Writer, r.Request, nil)
+	if err != nil {
+		str := fmt.Sprintf("WS upgrade failed: %+v", err)
+		g.Log(consts.SocketLogger).Error(ctx, str)
+		//r.Response.WriteHeader(500)
+		// 终止后续执行
+		r.Response.WriteExit(err.Error())
+		//r.Exit()
+		return
+	}
+
+	// 将 WebSocket 连接存入上下文，供后续处理
+	r.SetCtxVar("ws_conn", ws)
+
+	// 继续执行后续处理
+	r.Middleware.Next()
 }

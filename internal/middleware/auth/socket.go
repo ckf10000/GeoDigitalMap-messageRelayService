@@ -10,17 +10,41 @@
 package auth
 
 import (
+	"GeoDigitalMap-messageRelayService/internal/consts"
+	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"net/http"
 )
 
-func ClientAuth(r *ghttp.Request) {
+func ClientAuth(r *ghttp.Request) (string, string, error) {
+	ctx := r.Context()
 	clientID := r.GetQuery("clientID")
+	token := r.GetQuery("token")
 	if clientID.IsEmpty() {
-		r.Response.WriteStatusExit(http.StatusUnauthorized, "clientID required")
+		err := "clientID is required"
+		g.Log(consts.SocketLogger).Error(ctx, err)
+		return "", "", gerror.New(err)
 	}
-
-	// 可扩展添加JWT验证逻辑
+	if token.IsEmpty() {
+		err := "token is required"
+		g.Log(consts.SocketLogger).Error(ctx, err)
+		return "", "", gerror.New(err)
+	}
+	// TODO 可扩展添加JWT验证逻辑，目前假设都有效
 	r.SetCtxVar("clientID", clientID.String())
+	r.SetCtxVar("token", token.String())
+	return clientID.String(), token.String(), nil
+}
+
+func ClientAuthMiddleware(r *ghttp.Request) {
+	_, _, err := ClientAuth(r)
+	if err != nil {
+		//r.Response.WriteHeader(400)
+		// 终止后续执行
+		r.Response.WriteExit(err.Error())
+		//r.Exit()
+		return
+	}
+	// 认证成功，继续执行下一个中间件或路由
 	r.Middleware.Next()
 }
