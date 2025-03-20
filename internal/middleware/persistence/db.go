@@ -12,19 +12,19 @@ package persistence
 import (
 	"GeoDigitalMap-messageRelayService/internal/consts"
 	"context"
+	"fmt"
 	_ "github.com/gogf/gf/contrib/drivers/pgsql/v2"
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 )
 
 // ConnDb 检查数据库连接是否正常
-func ConnDb(ctx context.Context) error {
+func ConnDb(ctx context.Context) string {
 	err := g.DB().PingMaster()
 	if err != nil {
-		str := "connect to the database failed"
+		str := fmt.Sprintf("connect \"%s:%s@%s:%s/%s\" to the database failed", g.DB().GetConfig().Type, g.DB().GetConfig().User, g.DB().GetConfig().Host, g.DB().GetConfig().Port, g.DB().GetConfig().Name)
 		g.Log(consts.RestAPILogger).Error(ctx, str)
-		return gerror.New(str)
+		return str
 	}
 	g.Log(consts.RestAPILogger).Info(ctx, "database connect successful")
-	return nil
+	return ""
 }
