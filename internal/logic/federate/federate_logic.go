@@ -272,7 +272,7 @@ func (l *IFederateLogic) ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto
 }
 
 // GetAllFederatePeers 返回所有在线Peer的列表
-func (l *IFederateLogic) GetAllFederatePeers() []*dto.FederatePeerOutput {
+func (l *IFederateLogic) GetAllFederatePeers(ctx context.Context) []*dto.FederatePeerOutput {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -283,5 +283,6 @@ func (l *IFederateLogic) GetAllFederatePeers() []*dto.FederatePeerOutput {
 			JoinAt:   peer.JoinAt.Format(consts.TimeFormatter),
 		})
 	}
+	g.Log(consts.RestAPILogger).Infof(ctx, "get the federate peers count is %d", len(allFederatePeers))
 	return allFederatePeers
 }

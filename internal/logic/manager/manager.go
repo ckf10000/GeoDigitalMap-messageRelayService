@@ -18,7 +18,7 @@ import (
 // IClientLogic 接口定义
 type IClientLogic interface {
 	GetAllClientIDs() []*string
-	GetAllClients() []*dto.OnlineClientOutput
+	GetAllClients(ctx context.Context) []*dto.OnlineClientOutput
 	SendBroadcastMessage(ctx context.Context, message []byte)
 	AddClient(ctx context.Context, id string, conn *websocket.Conn) error
 	HandleMessages(ctx context.Context, conn *websocket.Conn)
@@ -27,7 +27,7 @@ type IClientLogic interface {
 // IFederateLogic 接口定义
 type IFederateLogic interface {
 	GetAllPeerAddrs() []*string
-	GetAllFederatePeers() []*dto.FederatePeerOutput
+	GetAllFederatePeers(ctx context.Context) []*dto.FederatePeerOutput
 	SendRelayMessage(ctx context.Context, message []byte, federateSource []string)
 	ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto.HostAddress)
 	AddPeer(ctx context.Context, addr string, conn *websocket.Conn) error

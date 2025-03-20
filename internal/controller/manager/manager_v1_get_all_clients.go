@@ -18,6 +18,6 @@ import (
 func (c *ControllerV1) GetOnlineClients(ctx context.Context, req *v1.GetOnlineClientsReq) (res *v1.GetOnlineClientsRes, err error) {
 	// **确保 res 被初始化**
 	res = &v1.GetOnlineClientsRes{}
-	res.List = manager.GetAllClients()
+	res.List = manager.GetAllClients(ctx)
 	return res, nil
 }

@@ -18,6 +18,6 @@ import (
 func (c *ControllerV1) GetAllFederatePeers(ctx context.Context, req *v1.GetAllFederatePeersReq) (res *v1.GetAllFederatePeersRes, err error) {
 	// **确保 res 被初始化**
 	res = &v1.GetAllFederatePeersRes{}
-	res.List = manager.GetAllFederatePeers()
+	res.List = manager.GetAllFederatePeers(ctx)
 	return res, nil
 }

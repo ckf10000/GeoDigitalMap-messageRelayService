@@ -243,8 +243,8 @@ func (l *IClientLogic) SendBroadcastMessage(ctx context.Context, message []byte)
 	return
 }
 
-// GetAllClients 返回所有在线客户端的 map，便于管理监控
-func (l *IClientLogic) GetAllClients() []*dto.OnlineClientOutput {
+// GetAllClients 返回所有在线客户端列表，便于管理监控
+func (l *IClientLogic) GetAllClients(ctx context.Context) []*dto.OnlineClientOutput {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -257,6 +257,7 @@ func (l *IClientLogic) GetAllClients() []*dto.OnlineClientOutput {
 			JoinAt:   client.JoinAt.Format(consts.TimeFormatter),
 		})
 	}
+	g.Log(consts.RestAPILogger).Infof(ctx, "get the online clients count is %d", len(allClients))
 	return allClients
 }
 
