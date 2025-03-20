@@ -23,8 +23,8 @@ type Client struct {
 
 // IClientLogic 管理所有客户端连接及消息路由
 type IClientLogic struct {
-	clients map[string]*Client
-	mu      sync.RWMutex
+	clients map[string]*Client // 客户端对象字典
+	mu      sync.RWMutex       // 读写锁
 }
 
 // NewIClientLogic 构造新的 ClientLogic 实例

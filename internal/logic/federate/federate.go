@@ -15,8 +15,8 @@ import (
 
 // IFederateLogic 负责级联对端的管理与消息转发
 type IFederateLogic struct {
-	peers map[string]*Peer
-	mu    sync.RWMutex
+	peers map[string]*Peer // 级联的对端对象字典
+	mu    sync.RWMutex     // 读写锁
 }
 
 // NewIFederateLogic 构造新的级联逻辑实例
