@@ -22,4 +22,5 @@ const (
 	ContextUserIdKey             = "userId"         // 上下文变量中的userId的key
 	ContextTokenKey              = "token"          // 上下文变量中的token的key
 	ContextWSConnKey             = "wsConn"         // 上下文变量中的websocket连接的key
+	TimeFormatter                = time.RFC3339     // 时间上下文变量的格式
 )

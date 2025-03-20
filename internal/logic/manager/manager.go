@@ -26,7 +26,8 @@ type IClientLogic interface {
 
 // IFederateLogic 接口定义
 type IFederateLogic interface {
-	GetAllPeerAddrs() []string
+	GetAllPeerAddrs() []*string
+	GetAllFederatePeers() []*dto.FederatePeerOutput
 	SendRelayMessage(ctx context.Context, message []byte, federateSource []string)
 	ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto.HostAddress)
 	AddPeer(ctx context.Context, addr string, conn *websocket.Conn) error

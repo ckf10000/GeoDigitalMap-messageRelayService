@@ -9,6 +9,8 @@
 * *********************************************************************************************************************/
 package manager
 
+import "GeoDigitalMap-messageRelayService/internal/model/dto"
+
 // SetFederatePeerLogic 用于设置 Federate 逻辑
 func SetFederatePeerLogic(logic IFederateLogic) {
 	globalFederatePeerLogic = logic
@@ -19,7 +21,12 @@ func GetFederatePeerLogic() IFederateLogic {
 	return globalFederatePeerLogic
 }
 
-// GetAllPeerAddrs 是辅助接口，用于管理接口返回Federate在线Peer列表
-func GetAllPeerAddrs() []string {
+// GetAllPeerAddrs 是辅助接口，用于返回所有在线Peer的 IP地址列表
+func GetAllPeerAddrs() []*string {
 	return globalFederatePeerLogic.GetAllPeerAddrs()
+}
+
+// GetAllFederatePeers 是辅助接口，用于返回所有Federate在线Peer列表
+func GetAllFederatePeers() []*dto.FederatePeerOutput {
+	return globalFederatePeerLogic.GetAllFederatePeers()
 }

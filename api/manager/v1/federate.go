@@ -9,7 +9,10 @@
 * *********************************************************************************************************************/
 package v1
 
-import "github.com/gogf/gf/v2/frame/g"
+import (
+	"GeoDigitalMap-messageRelayService/internal/model/dto"
+	"github.com/gogf/gf/v2/frame/g"
+)
 
 // AddPeerReq 添加级联对端设备的请求
 type AddPeerReq struct {
@@ -20,3 +23,13 @@ type AddPeerReq struct {
 
 // AddPeerRes 添加级联对端设备的响应
 type AddPeerRes struct{}
+
+// GetAllFederatePeersReq 获取所有已级联的对端列表的请求
+type GetAllFederatePeersReq struct {
+	g.Meta `path:"getFederatePeers" method:"get" tags:"系统管理" summary:"获取所有已级联的对端列表"`
+}
+
+// GetAllFederatePeersRes 获取所有已级联的对端列表的响应
+type GetAllFederatePeersRes struct {
+	List []*dto.FederatePeerOutput `json:"list"` // 所有已级联的对端列表
+}

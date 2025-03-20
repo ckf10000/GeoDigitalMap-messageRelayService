@@ -162,7 +162,7 @@ func (l *IClientLogic) RouteMessage(ctx context.Context, msg *dto.MessageIutputD
 		Sender:      msg.Sender,
 		Receivers:   msg.Receivers,
 		Content:     msg.Content,
-		CreatedAt:   msg.CreatedAt.Format(time.RFC3339),
+		CreatedAt:   msg.CreatedAt.Format(consts.TimeFormatter),
 		MessageType: msg.MessageType,
 	}
 	data, err := json.Marshal(messageOutputDTO)
@@ -254,7 +254,7 @@ func (l *IClientLogic) GetAllClients() []*dto.OnlineClientOutput {
 			UserID:   client.UserID,
 			ClientID: clientID,
 			Username: "",
-			JoinAt:   client.JoinAt.Format(time.RFC3339),
+			JoinAt:   client.JoinAt.Format(consts.TimeFormatter),
 		})
 	}
 	return allClients

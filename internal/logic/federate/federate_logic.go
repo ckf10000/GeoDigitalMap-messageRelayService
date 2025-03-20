@@ -144,7 +144,7 @@ func (l *IFederateLogic) RouteMessage(ctx context.Context, message *dto.RelayMes
 		Sender:      message.MessageIutput.Sender,
 		Receivers:   message.MessageIutput.Receivers,
 		Content:     message.MessageIutput.Content,
-		CreatedAt:   message.MessageIutput.CreatedAt.Format(time.RFC3339),
+		CreatedAt:   message.MessageIutput.CreatedAt.Format(consts.TimeFormatter),
 		MessageType: message.MessageIutput.MessageType,
 	}
 	switch message.MessageIutput.MessageType {
@@ -211,13 +211,13 @@ func (l *IFederateLogic) RemovePeer(ctx context.Context, addr string) {
 }
 
 // GetAllPeerAddrs 返回所有在线Peer的 IP地址 列表
-func (l *IFederateLogic) GetAllPeerAddrs() []string {
+func (l *IFederateLogic) GetAllPeerAddrs() []*string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
-	peers := make([]string, 0, len(l.peers))
+	peers := make([]*string, 0, len(l.peers))
 	for addr := range l.peers {
-		peers = append(peers, addr)
+		peers = append(peers, &addr)
 	}
 	return peers
 }
@@ -269,4 +269,19 @@ func (l *IFederateLogic) ConnectToPeers(ctx context.Context, hostAddrsDTO []*dto
 			}
 		}(addrDTO)
 	}
+}
+
+// GetAllFederatePeers 返回所有在线Peer的列表
+func (l *IFederateLogic) GetAllFederatePeers() []*dto.FederatePeerOutput {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	var allFederatePeers []*dto.FederatePeerOutput
+	for address, peer := range l.peers {
+		allFederatePeers = append(allFederatePeers, &dto.FederatePeerOutput{
+			PeerAddr: address,
+			JoinAt:   peer.JoinAt.Format(consts.TimeFormatter),
+		})
+	}
+	return allFederatePeers
 }
