@@ -16,9 +16,9 @@ import (
 
 // Client 表示一个客户端连接
 type Client struct {
-	ID   string          // 客户端唯一标识
-	Conn *websocket.Conn // WebSocket 连接
-	Send chan []byte     // 带缓冲的发送通道
+	ClientID string          // 客户端唯一标识
+	Conn     *websocket.Conn // WebSocket 连接
+	Send     chan []byte     // 带缓冲的发送通道
 }
 
 // IClientLogic 管理所有客户端连接及消息路由

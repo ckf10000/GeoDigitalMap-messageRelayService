@@ -57,7 +57,7 @@ func (c *Client) WritePump(ctx context.Context) {
 }
 
 // AddClient 添加新的客户端，clientID 建议使用全局唯一标识
-func (l *IClientLogic) AddClient(ctx context.Context, id string, conn *websocket.Conn) error {
+func (l *IClientLogic) AddClient(ctx context.Context, clientID string, conn *websocket.Conn) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -69,17 +69,17 @@ func (l *IClientLogic) AddClient(ctx context.Context, id string, conn *websocket
 
 	// 创建带缓冲的发送通道
 	client := &Client{
-		ID:   id,
-		Conn: conn,
-		Send: make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
+		ClientID: clientID,
+		Conn:     conn,
+		Send:     make(chan []byte, consts.MessageChannelSize), // 缓冲区大小可根据实际需求调整
 	}
 
-	l.clients[id] = client
+	l.clients[clientID] = client
 
 	// 启动一个 goroutine 处理消息发送
 	go client.WritePump(ctx)
 
-	g.Log(consts.SocketLogger).Infof(ctx, "New client connected: %s", id)
+	g.Log(consts.SocketLogger).Infof(ctx, "New client connected: %s", clientID)
 	return nil
 }
 
@@ -227,7 +227,7 @@ func (l *IClientLogic) SendBroadcastMessage(ctx context.Context, message []byte)
 			// 消息成功写入通道
 		default:
 			// 通道已满，丢弃消息或记录日志
-			g.Log(consts.SocketLogger).Warningf(ctx, "Send channel is full, message dropped for client: %s", client.ID)
+			g.Log(consts.SocketLogger).Warningf(ctx, "Send channel is full, message dropped for client: %s", client.ClientID)
 		}
 	}
 
