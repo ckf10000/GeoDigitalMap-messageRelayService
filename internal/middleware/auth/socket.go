@@ -48,3 +48,8 @@ func ClientAuthMiddleware(r *ghttp.Request) {
 	// 认证成功，继续执行下一个中间件或路由
 	r.Middleware.Next()
 }
+
+func PeerAuthMiddleware(r *ghttp.Request) {
+	// TODO 认证成功，继续执行下一个中间件或路由
+	r.Middleware.Next()
+}

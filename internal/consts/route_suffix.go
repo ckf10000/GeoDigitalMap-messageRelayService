@@ -10,9 +10,8 @@
 package consts
 
 const (
-	WSROOT            = "/"
-	WSSROOT           = "/"
-	FEDERATEROOT      = "/federate"
+	ROUTEROOT         = "/"
+	FEDERATEMODULE    = "/federate"
 	APIROOT           = "/api"
 	V1                = "/v1"
 	MAINTENANCEMODULE = "/maintenance"

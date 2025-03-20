@@ -28,7 +28,7 @@ func CreateSSLSocketServer(ctx context.Context) *ghttp.Server {
 	ser.SetLogger(g.Log(consts.SocketLogger))
 
 	// 主路由定义
-	ser.Group(consts.WSSROOT, func(group *ghttp.RouterGroup) {
+	ser.Group(consts.ROUTEROOT, func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		// 添加认证中间件
 		group.Middleware(auth.ClientAuthMiddleware)
@@ -36,7 +36,7 @@ func CreateSSLSocketServer(ctx context.Context) *ghttp.Server {
 		group.Middleware(forward.WebSocketUpgradeMiddleware)
 
 		// WebSocket 连接处理
-		group.GET(consts.WSSROOT, func(r *ghttp.Request) {
+		group.GET(consts.ROUTEROOT, func(r *ghttp.Request) {
 			subCtx := r.Context()
 			clientCtl := client.NewV1()
 
@@ -63,7 +63,7 @@ func CreateSSLSocketServer(ctx context.Context) *ghttp.Server {
 			go clientCtl.HandleMessages(subCtx, ws)
 		})
 	})
-	
+
 	ser.EnableHTTPS(crtPath, keyPath)
 	//ser.SetGraceful(true)
 	//ser.EnableAdmin()

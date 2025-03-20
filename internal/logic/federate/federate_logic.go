@@ -223,7 +223,7 @@ func (l *IFederateLogic) GetAllPeerAddrs() []string {
 
 func (l *IFederateLogic) connectToPeer(ctx context.Context, hostAddrDTO *dto.HostAddress) (*websocket.Conn, error) {
 	// 实现连接逻辑，例如 WebSocket 连接
-	url := fmt.Sprintf("ws://%s:%d%s", hostAddrDTO.IP, hostAddrDTO.Port, consts.FEDERATEROOT)
+	url := fmt.Sprintf("ws://%s:%d%s", hostAddrDTO.IP, hostAddrDTO.Port, consts.FEDERATEMODULE)
 	g.Log(consts.FederateLogger).Infof(ctx, "Start connecting: %s", url)
 	conn, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
 	if err != nil {
