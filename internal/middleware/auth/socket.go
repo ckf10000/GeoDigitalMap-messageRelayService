@@ -18,10 +18,10 @@ import (
 
 func ClientAuth(r *ghttp.Request) (string, string, error) {
 	ctx := r.Context()
-	clientID := r.GetQuery("clientID")
+	userId := r.GetQuery("userId")
 	token := r.GetQuery("token")
-	if clientID.IsEmpty() {
-		err := "clientID is required"
+	if userId.IsEmpty() {
+		err := "userId is required"
 		g.Log(consts.SocketLogger).Error(ctx, err)
 		return "", "", gerror.New(err)
 	}
@@ -31,9 +31,9 @@ func ClientAuth(r *ghttp.Request) (string, string, error) {
 		return "", "", gerror.New(err)
 	}
 	// TODO 可扩展添加JWT验证逻辑，目前假设都有效
-	r.SetCtxVar("clientID", clientID.String())
+	r.SetCtxVar("userId", userId.String())
 	r.SetCtxVar("token", token.String())
-	return clientID.String(), token.String(), nil
+	return userId.String(), token.String(), nil
 }
 
 func ClientAuthMiddleware(r *ghttp.Request) {
